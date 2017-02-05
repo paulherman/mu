@@ -14,10 +14,7 @@ int main(int argc, char **argv) {
   SDL_Window *window;
   SDL_GLContext gl_context;
   SDL_Init(SDL_INIT_VIDEO);
-  int img_error = IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
-  if (img_error != IMG_INIT_PNG) {
-    printf("IMG_Init: %s\n", IMG_GetError());
-  }
+  IMG_Init(IMG_INIT_PNG | IMG_INIT_JPG);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
@@ -32,6 +29,8 @@ int main(int argc, char **argv) {
 
   struct transformation transformation = transformation_new(0, 0.0, -10.0, 0.0, 0, 0.0, 0.1);
   struct camera camera = camera_new(deg(70.0), 0.1, 1000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  struct vec3f look_at = vec3f_new(0.0, 1.0, 10.0);
+  camera_look_at(&camera, look_at);
 
   struct buffer lights = buffer_new(1, sizeof(struct light));
   *(struct light *)buffer_get(&lights, 0) = light_new(0, 0, 0, 1.0, 1.0, 1.0);

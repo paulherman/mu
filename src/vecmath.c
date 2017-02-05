@@ -23,7 +23,7 @@ struct vec2f vec2f_add(struct vec2f a, struct vec2f b) {
 }
 
 struct vec2f vec2f_normalize(struct vec2f a) {
-  return vec2f_scale(a, sqrt(vec2f_dot(a, a)));
+  return vec2f_scale(a, 1.0 / sqrt(vec2f_dot(a, a)));
 }
 
 struct vec3f vec2f_to_vec3f(struct vec2f a, float z) {
@@ -77,7 +77,7 @@ struct vec3f vec3f_scale(struct vec3f a, float s) {
 }
 
 struct vec3f vec3f_normalize(struct vec3f a) {
-  return vec3f_scale(a, sqrt(vec3f_dot(a, a)));
+  return vec3f_scale(a, 1.0 / sqrt(vec3f_dot(a, a)));
 }
 
 struct vec4f vec3f_to_vec4f(struct vec3f a, float t) {
@@ -88,6 +88,15 @@ struct vec4f vec3f_to_vec4f(struct vec3f a, float t) {
     .t = t
   };
   return res;
+}
+
+struct vec3f vec3f_cross(struct vec3f a, struct vec3f b) {
+  struct vec3f result = {
+    .x = a.y * b.z - a.z * b.y,
+    .y = a.z * b.x - a.x * b.z,
+    .z = a.x * b.y - a.y * b.x
+  };
+  return result;
 }
 
 float vec4f_dot(struct vec4f a, struct vec4f b) {
@@ -114,7 +123,7 @@ struct vec4f vec4f_scale(struct vec4f a, float s) {
 }
 
 struct vec4f vec4f_normalize(struct vec4f a) {
-  return vec4f_scale(a, sqrt(vec4f_dot(a, a)));
+  return vec4f_scale(a, 1.0 / sqrt(vec4f_dot(a, a)));
 }
 
 struct vec3f vec4f_to_vec3f(struct vec4f a) {

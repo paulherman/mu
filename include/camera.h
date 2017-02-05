@@ -14,5 +14,6 @@ struct camera {
 struct camera camera_new(float fov, float clip_near, float clip_far, float x, float y, float z, float rx, float ry, float rz);
 void camera_move(struct camera *camera, float dx, float dy, float dz);
 void camera_rotate(struct camera *camera, float drx, float dry, float drz);
+void camera_look_at(struct camera *camera, struct vec3f position);
 
 #endif

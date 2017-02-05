@@ -47,6 +47,7 @@ struct vec3f vec3f_add(struct vec3f a, struct vec3f b);
 struct vec3f vec3f_scale(struct vec3f a, float s);
 struct vec3f vec3f_normalize(struct vec3f a);
 struct vec4f vec3f_to_vec4f(struct vec3f a, float z);
+struct vec3f vec3f_cross(struct vec3f a, struct vec3f b);
 
 float vec4f_dot(struct vec4f a, struct vec4f b);
 struct vec4f vec4f_add(struct vec4f a, struct vec4f b);

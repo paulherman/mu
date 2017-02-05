@@ -19,6 +19,6 @@ include_directories(${SDL_IMAGE_INCLUDE_DIRS})
 
 file(GLOB src "src/*.c")
 
-add_executable(mymu ${src})
-target_link_libraries(mymu m ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} SDL2 SDL2_image)
-add_custom_command(TARGET mymu POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:mymu>/res)
+add_executable(client ${src})
+target_link_libraries(client m ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} SDL2 SDL2_image)
+add_custom_command(TARGET client POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res $<TARGET_FILE_DIR:client>/res)
