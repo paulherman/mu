@@ -40,14 +40,44 @@ int main(int argc, char **argv) {
   printf("Mesh loaded %d\n", bmd_load(&bmd, "./res/Sword01.bmd", "./res/"));
 
   bool running = true;
+  bool key_up = false, key_down = false;
   while (running) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
-        case SDL_KEYDOWN:
+        case SDL_KEYDOWN: {
+          SDL_KeyboardEvent keyboard_ev = event.key;
+          switch (keyboard_ev.keysym.scancode) {
+            case SDL_SCANCODE_W: 
+              key_up = true;
+              break;
+            case SDL_SCANCODE_S: 
+              key_down = true;
+              break;
+            default:
+              break;
+          }
           break;
-        case SDL_KEYUP:
+        }
+        case SDL_KEYUP: {
+          SDL_KeyboardEvent keyboard_ev = event.key;
+          switch (keyboard_ev.keysym.scancode) {
+            case SDL_SCANCODE_W: 
+              key_up = false;
+              break;
+            case SDL_SCANCODE_S: 
+              key_down = false;
+              break;
+            default:
+              break;
+          }
           break;
+        }
+        case SDL_MOUSEMOTION: {
+          SDL_MouseMotionEvent mouse_motion_ev = event.motion;
+          camera_rotate(&camera, 0.0, (1.0 * mouse_motion_ev.xrel) / (1.0 * 512), 0.0);
+          break;
+        }
         case SDL_QUIT:
           running = false;
           break;
@@ -55,8 +85,20 @@ int main(int argc, char **argv) {
           break;
       }
     }
+
     transformation_rotate(&transformation, 0.0, 0.01, 0.0);
-    transformation_move(&transformation, 0.0, 0.0, -0.01);
+
+    struct vec3f *camera_rotation = &camera.transformation.rotation;
+    if (key_up) {
+      struct vec4f trans = vec3f_to_vec4f(vec3f_new(0.0, 0.0, -0.1), 1.0);
+      struct vec3f move = vec4f_to_vec3f(mat4f_dot(mat4f_rotation(*camera_rotation), trans));
+      camera_move(&camera, move.x, move.y, move.z);
+    }
+    if (key_down) {
+      struct vec4f trans = vec3f_to_vec4f(vec3f_new(0.0, 0.0, 0.1), 1.0);
+      struct vec3f move = vec4f_to_vec3f(mat4f_dot(mat4f_rotation(*camera_rotation), trans));
+      camera_move(&camera, move.x, move.y, move.z);
+    }
 
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

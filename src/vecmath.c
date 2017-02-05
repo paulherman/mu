@@ -45,6 +45,15 @@ struct vec4f vec2f_to_vec4f(struct vec3f a, float z, float t) {
   return res;
 }
 
+struct vec3f vec3f_new(float x, float y, float z) {
+  struct vec3f res = {
+    .x = x,
+    .y = y,
+    .z = z
+  };
+  return res;
+}
+
 float vec3f_dot(struct vec3f a, struct vec3f b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -141,25 +150,7 @@ struct vec4f mat4f_dot(struct mat4f a, struct vec4f b) {
   return res;
 }
 
-struct mat4f mat4f_transformation(struct vec3f translation, struct vec3f rotation, float scale) {
-  const struct mat4f translation_matrix = {
-    .elems = {
-      { 1.0, 0.0, 0.0, translation.x },
-      { 0.0, 1.0, 0.0, translation.y },
-      { 0.0, 0.0, 1.0, translation.z },
-      { 0.0, 0.0, 0.0, 1.0 }
-    }
-  };
-
-  const struct mat4f scaling_matrix = {
-    .elems = {
-      { scale, 0.0, 0.0, 0.0 },
-      { 0.0, scale, 0.0, 0.0 },
-      { 0.0, 0.0, scale, 0.0 },
-      { 0.0, 0.0, 0.0, 1.0 }
-    }
-  };
-
+struct mat4f mat4f_rotation(struct vec3f rotation) {
   float rx = rotation.x;
   const struct mat4f rot_x_matrix = {
     .elems = {
@@ -189,8 +180,29 @@ struct mat4f mat4f_transformation(struct vec3f translation, struct vec3f rotatio
       { 0.0, 0.0, 0.0, 1.0 }
     }
   };
-  
-  const struct mat4f rotation_matrix = mat4f_multiply(rot_x_matrix, mat4f_multiply(rot_y_matrix, rot_z_matrix));
+  return mat4f_multiply(rot_x_matrix, mat4f_multiply(rot_y_matrix, rot_z_matrix));
+}
+
+struct mat4f mat4f_transformation(struct vec3f translation, struct vec3f rotation, float scale) {
+  const struct mat4f translation_matrix = {
+    .elems = {
+      { 1.0, 0.0, 0.0, translation.x },
+      { 0.0, 1.0, 0.0, translation.y },
+      { 0.0, 0.0, 1.0, translation.z },
+      { 0.0, 0.0, 0.0, 1.0 }
+    }
+  };
+
+  const struct mat4f scaling_matrix = {
+    .elems = {
+      { scale, 0.0, 0.0, 0.0 },
+      { 0.0, scale, 0.0, 0.0 },
+      { 0.0, 0.0, scale, 0.0 },
+      { 0.0, 0.0, 0.0, 1.0 }
+    }
+  };
+
+  const struct mat4f rotation_matrix = mat4f_rotation(rotation); 
 
   struct mat4f result = mat4f_multiply(translation_matrix, mat4f_multiply(rotation_matrix, scaling_matrix));
   return result;
@@ -210,6 +222,14 @@ struct mat4f mat4f_projection(float aspect_ratio, float fov, float clip_near, fl
     }
   };
   return projection;
+}
+
+struct mat4f mat4f_get_rotation(struct mat4f a) {
+  struct mat4f res = a;
+  res.elems[0][3] = 0.0;
+  res.elems[1][3] = 0.0;
+  res.elems[2][3] = 0.0;
+  return res;
 }
 
 void mat4f_dump(FILE *f, struct mat4f matrix) {

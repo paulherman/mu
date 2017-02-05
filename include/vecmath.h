@@ -41,6 +41,7 @@ struct vec2f vec2f_normalize(struct vec2f a);
 struct vec3f vec2f_to_vec3f(struct vec2f a, float z);
 struct vec4f vec2f_to_vec4f(struct vec3f a, float z, float t);
 
+struct vec3f vec3f_new(float x, float y, float z);
 float vec3f_dot(struct vec3f a, struct vec3f b);
 struct vec3f vec3f_add(struct vec3f a, struct vec3f b);
 struct vec3f vec3f_scale(struct vec3f a, float s);
@@ -60,6 +61,8 @@ static const struct mat4f mat4f_identity = {
 struct mat4f mat4f_multiply(struct mat4f a, struct mat4f b);
 struct vec4f mat4f_dot(struct mat4f a, struct vec4f b);
 struct mat4f mat4f_transformation(struct vec3f translation, struct vec3f rotation, float scale);
+struct mat4f mat4f_get_rotation(struct mat4f a);
+struct mat4f mat4f_rotation(struct vec3f rotation);
 struct mat4f mat4f_projection(float aspect_ratio, float fov, float clip_near, float clip_far);
 void mat4f_dump(FILE *f, struct mat4f matrix);
 
