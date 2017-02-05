@@ -219,3 +219,13 @@ void mat4f_dump(FILE *f, struct mat4f matrix) {
     printf("\n");
   }
 }
+
+static const float pi = acos(-1.0);
+
+float deg(float rad) {
+  return rad / pi * 180.0;
+}
+
+float rad(float deg) {
+  return deg / 180.0 * pi;
+}

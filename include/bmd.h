@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include "error.h"
 #include "filebuf.h"
+#include "texture.h"
+#include "renderable.h"
 #include "vecmath.h"
 
 struct bmd_animation {
@@ -65,7 +67,16 @@ struct bmd_mesh {
   struct bmd_bone *bones;
 };
 
-bool bmd_load(struct bmd_mesh *mesh, const char *path);
-void bmd_delete(struct bmd_mesh *mesh);
+struct bmd_entity {
+  struct bmd_mesh mesh;
+  struct texture *textures;
+  struct renderable *renderables;
+};
+
+bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path);
+void bmd_mesh_delete(struct bmd_mesh *mesh);
+bool bmd_load(struct bmd_entity *entity, const char *mesh_path, const char *texture_folder);
+void bmd_delete(struct bmd_entity *entity);
+bool bmd_render(struct bmd_entity *entity, struct shader *shader, struct camera *camera, struct transformation *transformation, struct buffer *lights);
 
 #endif

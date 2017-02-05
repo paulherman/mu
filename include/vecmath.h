@@ -63,4 +63,7 @@ struct mat4f mat4f_transformation(struct vec3f translation, struct vec3f rotatio
 struct mat4f mat4f_projection(float aspect_ratio, float fov, float clip_near, float clip_far);
 void mat4f_dump(FILE *f, struct mat4f matrix);
 
+float deg(float rad);
+float rad(float deg);
+
 #endif

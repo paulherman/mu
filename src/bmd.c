@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "filebuf.h"
 #include "bmd.h"
 
@@ -164,7 +165,16 @@ static inline void bmd_decrypt(struct file_buffer *file, uint32_t encode_size) {
 	}
 }
 
-bool bmd_load(struct bmd_mesh *mesh, const char *path) {
+static inline size_t max3(size_t a, size_t b, size_t c) {
+  size_t m = a;
+  if (b > m)
+    m = b;
+  if (c > m)
+    m = c;
+  return m;
+}
+
+bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
   struct file_buffer file;
   if (!file_buffer_read(&file, path))
     return false;
@@ -222,7 +232,7 @@ err_clean:
   return false;
 }
 
-void bmd_delete(struct bmd_mesh *mesh) {
+void bmd_mesh_delete(struct bmd_mesh *mesh) {
   for (size_t i = 0; i < mesh->num_objects; i++) {
     struct bmd_object *object = &mesh->objects[i];
     free(object->positions);
@@ -249,3 +259,125 @@ void bmd_delete(struct bmd_mesh *mesh) {
   free(mesh->bones);
 }
 
+static inline bool bmd_texture_load(struct bmd_entity *entity, const char *texture_folder) {
+  entity->textures = calloc(entity->mesh.num_objects, sizeof(struct texture));
+  for (size_t i = 0; i < entity->mesh.num_objects; i++) {
+    const struct bmd_object *object = &entity->mesh.objects[i];
+    size_t texture_name_len = strlen(object->texture);
+
+    char texture_name[32];
+    strcpy(texture_name, object->texture);
+    if (texture_name[texture_name_len - 3] == 't') {
+      texture_name[texture_name_len - 3] = 'O';
+      texture_name[texture_name_len - 2] = 'Z';
+      texture_name[texture_name_len - 1] = 'T';
+    } else if (texture_name[texture_name_len - 3] == 'j') {
+      texture_name[texture_name_len - 3] = 'O';
+      texture_name[texture_name_len - 2] = 'Z';
+      texture_name[texture_name_len - 1] = 'J';
+    }
+
+    char *texture_path = calloc(strlen(texture_folder) + 32, sizeof(char));
+    strcat(texture_path, texture_folder);
+    strcat(texture_path, texture_name);
+
+    int result_code = SUCCESS;
+    if (texture_name[texture_name_len - 1] == 'T') {
+      result_code = texture_load_ozt(&entity->textures[i], texture_path);
+    } else if (texture_name[texture_name_len - 1] == 'J') {
+      result_code = texture_load_ozj(&entity->textures[i], texture_path);
+    } else {
+     result_code = texture_load(&entity->textures[i], texture_path);
+    }
+
+    free(texture_path);
+
+    if (result_code != SUCCESS) {
+      for (size_t j = 0; j < i; j++)
+        texture_delete(&entity->textures[j]);
+      free(entity->textures);
+      return false;
+    }
+  }
+  return true;
+}
+
+static inline bool bmd_renderable_load(struct bmd_entity *entity) {
+  entity->renderables = calloc(entity->mesh.num_objects, sizeof(struct renderable));
+  for (size_t i = 0; i < entity->mesh.num_objects; i++) {
+    const struct bmd_object *object = &entity->mesh.objects[i];
+    const size_t num_defs = object->num_triangles * 3;
+
+    struct vec3f *positions = calloc(num_defs, sizeof(struct vec3f));
+    struct vec3f *normals = calloc(num_defs, sizeof(struct vec3f));
+    struct vec2f *texture_coords = calloc(num_defs, sizeof(struct vec2f));
+    uint32_t *vertex_ids = calloc(num_defs, sizeof(uint32_t));
+
+    for (size_t j = 0; j < object->num_triangles; j++) {
+      const struct bmd_triangle *triangle = &object->triangles[j];
+      for (size_t k = 0; k < 3; k++) {
+        positions[3 * j + k] = object->positions[triangle->positions[k]].position;
+        positions[3 * j + k].z *= -1.0;
+        normals[3 * j + k] = object->normals[triangle->normals[k]].normal;
+        normals[3 * j + k].z *= -1.0;
+        texture_coords[3 * j + k] = object->texture_coords[triangle->texture_coords[k]];
+        texture_coords[3 * j + k].y = 1.0 - texture_coords[3 * j + k].y;
+        vertex_ids[3 * j + k] = 3 * j + k;
+      }
+    }
+
+    struct mesh mesh = {
+      .vertex_positions = positions,
+      .vertex_normals = normals,
+      .texture_coords = texture_coords,
+      .vertex_ids = vertex_ids,
+      .num_vertex_defs = num_defs,
+      .num_vertices = num_defs,
+      .num_triangles = num_defs / 3
+    };
+
+    bool error = renderable_load_mesh(&entity->renderables[i], &mesh) != SUCCESS;
+    mesh_delete(&mesh);
+    if (error) {
+      for (size_t j = 0; j < i; j++)
+        renderable_delete(&entity->renderables[j]);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool bmd_load(struct bmd_entity *entity, const char *mesh_path, const char *texture_folder) {
+  if (!bmd_mesh_load(&entity->mesh, mesh_path))
+    return false;
+
+  if (!bmd_texture_load(entity, texture_folder)) {
+    bmd_mesh_delete(&entity->mesh);
+    return false;
+  }
+
+  if (!bmd_renderable_load(entity)) {
+    bmd_mesh_delete(&entity->mesh);
+    for (size_t i = 0; i < entity->mesh.num_objects; i++)
+      texture_delete(&entity->textures[i]);
+    free(entity->textures);
+    return false;
+  }
+
+  return true;
+}
+
+void bmd_delete(struct bmd_entity *entity) {
+  for (size_t i = 0; i < entity->mesh.num_objects; i++)
+    texture_delete(&entity->textures[i]);
+  free(entity->textures);
+  bmd_mesh_delete(&entity->mesh);
+}
+
+bool bmd_render(struct bmd_entity *entity, struct shader *shader, struct camera *camera, struct transformation *transformation, struct buffer *lights) {
+  for (size_t i = 0; i < entity->mesh.num_objects; i++) {
+    if (renderable_render(&entity->renderables[i], shader, &entity->textures[i], camera, transformation, lights) != SUCCESS)
+      return false;
+  }
+  return true;
+}

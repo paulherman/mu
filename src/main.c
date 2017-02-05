@@ -27,30 +27,17 @@ int main(int argc, char **argv) {
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
 
-  struct mesh stall;
-  mesh_load_obj(&stall, "./res/stall.obj");
-
-  struct renderable stall_renderable;
-  printf("%d\n", renderable_load_mesh(&stall_renderable, &stall));
-
   struct shader shader;
-  printf("%d\n", shader_load(&shader, "./res/shader.vert", "./res/shader.frag"));
+  printf("Material shader loaded %d\n", shader_load(&shader, "./res/shader.vert", "./res/shader.frag") == SUCCESS);
 
-  struct texture texture;
-  printf("%d\n", texture_load_ozt(&texture, "./res/ship05.OZT"));
-
-  struct transformation transformation = transformation_new(0, 0.0, -10.0, 0.0, 3.14, 0.0, 0.5);
-
-  struct camera camera = camera_new(1.22, 0.1, 1000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+  struct transformation transformation = transformation_new(0, 0.0, -10.0, 0.0, 0, 0.0, 0.1);
+  struct camera camera = camera_new(deg(70.0), 0.1, 1000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
 
   struct buffer lights = buffer_new(1, sizeof(struct light));
   *(struct light *)buffer_get(&lights, 0) = light_new(0, 0, 0, 1.0, 1.0, 1.0);
 
-  struct bmd_mesh bmd;
-  printf("%d\n", bmd_load(&bmd, "./res/Ship01.bmd"));
-  for (size_t i = 0; i < bmd.num_objects; i++) {
-    printf("%s\n", bmd.objects[i].texture);
-  }
+  struct bmd_entity bmd;
+  printf("Mesh loaded %d\n", bmd_load(&bmd, "./res/Sword01.bmd", "./res/"));
 
   bool running = true;
   while (running) {
@@ -69,21 +56,20 @@ int main(int argc, char **argv) {
       }
     }
     transformation_rotate(&transformation, 0.0, 0.01, 0.0);
+    transformation_move(&transformation, 0.0, 0.0, -0.01);
 
     glEnable(GL_DEPTH_TEST);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
-    if (renderable_render(&stall_renderable, &shader, &texture, &camera, &transformation, &lights) != SUCCESS)
-      fprintf(stderr, "Rendering error with VAO %u and shader program %u\n", stall_renderable.vertex_array_object, shader.program);
+    if (!bmd_render(&bmd, &shader, &camera, &transformation, &lights))
+      printf("Mesh rendering error\n");
 
     SDL_GL_SwapWindow(window);
   }
 
   bmd_delete(&bmd);
   shader_delete(&shader);
-  renderable_delete(&stall_renderable);
-  mesh_delete(&stall);
   SDL_GL_DeleteContext(gl_context);
   SDL_DestroyWindow(window);
   IMG_Quit();
