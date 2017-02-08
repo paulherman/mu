@@ -9,6 +9,8 @@
 #include "light.h"
 #include "error.h"
 #include "bmd.h"
+#include "itemdef.h"
+#include "map.h"
 
 int main(int argc, char **argv) {
   SDL_Window *window;
