@@ -1,4 +1,4 @@
-#include <SDL2/SDL_image.h>
+#include "SDL2/SDL_image.h"
 #include "texture.h"
 #include "error.h"
 #include "filebuf.h"

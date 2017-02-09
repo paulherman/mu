@@ -1,8 +1,8 @@
 #ifndef RENDERABLE_H
 #define RENDERABLE_H
 
-#include <GL/glew.h>
-#include <SDL2/SDL_opengl.h>
+#include "GL/glew.h"
+#include "SDL2/SDL_opengl.h"
 #include "mesh.h"
 #include "shader.h"
 #include "texture.h"

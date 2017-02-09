@@ -1,8 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include <GL/glew.h>
-#include <SDL2/SDL_opengl.h>
+#include "GL/glew.h"
+#include "SDL2/SDL_opengl.h"
 #include "buffer.h"
 #include "vecmath.h"
 

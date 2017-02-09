@@ -1,6 +1,6 @@
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_image.h>
 #include <stdbool.h>
+#include "SDL2/SDL.h"
+#include "SDL2/SDL_image.h"
 #include "mesh.h"
 #include "shader.h"
 #include "texture.h"
@@ -11,6 +11,7 @@
 #include "bmd.h"
 #include "itemdef.h"
 #include "map.h"
+#include "client.h"
 
 int main(int argc, char **argv) {
   SDL_Window *window;

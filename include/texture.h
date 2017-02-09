@@ -1,9 +1,9 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
-#include <SDL2/SDL.h>
-#include <GL/glew.h>
-#include <SDL2/SDL_opengl.h>
+#include "SDL2/SDL.h"
+#include "GL/glew.h"
+#include "SDL2/SDL_opengl.h"
 
 struct texture {
   GLuint id;
