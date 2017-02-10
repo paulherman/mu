@@ -136,7 +136,7 @@ struct vec3f vec4f_to_vec3f(struct vec4f a) {
 }
 
 struct mat4f mat4f_multiply(struct mat4f a, struct mat4f b) {
-  struct mat4f res = { 0 };
+  struct mat4f res = { .elems = { {0} } };
   for (size_t row = 0; row < 4; row++) {
     for (size_t column = 0; column < 4; column++) {
       res.elems[row][column] = 0.0f;
@@ -149,7 +149,7 @@ struct mat4f mat4f_multiply(struct mat4f a, struct mat4f b) {
 }
 
 struct vec4f mat4f_dot(struct mat4f a, struct vec4f b) {
-  struct vec4f res = { 0 };
+  struct vec4f res = { .raw = { 0 } };
   for (size_t row = 0; row < 4; row++) {
     res.raw[row] = 0.0f;
     for (size_t i = 0; i < 4; i++) {
@@ -249,12 +249,14 @@ void mat4f_dump(FILE *f, struct mat4f matrix) {
   }
 }
 
-static const float pi = acos(-1.0);
+static inline float pi() {
+  return acos(-1.0);
+}
 
 float deg(float rad) {
-  return rad / pi * 180.0;
+  return rad / pi() * 180.0;
 }
 
 float rad(float deg) {
-  return deg / 180.0 * pi;
+  return deg / 180.0 * pi();
 }

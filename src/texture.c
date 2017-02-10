@@ -51,6 +51,7 @@ static int texture_load_skip_bytes(struct texture *texture, const char *path, co
   int result_code = SUCCESS;
   struct file_buffer file;
   FILE *converted_file = tmpfile();
+  SDL_RWops *sdl_converted_file = NULL;
 
   if (!file_buffer_read(&file, path))
     goto err_close;
@@ -64,7 +65,7 @@ static int texture_load_skip_bytes(struct texture *texture, const char *path, co
   fflush(converted_file);
   rewind(converted_file);
 
-  SDL_RWops *sdl_converted_file = SDL_RWFromFP(converted_file, SDL_FALSE);
+  sdl_converted_file = SDL_RWFromFP(converted_file, SDL_FALSE);
   if (sdl_converted_file == NULL)
     goto err_close;
 

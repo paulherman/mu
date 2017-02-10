@@ -112,15 +112,6 @@ static inline void bmd_decrypt(struct file_buffer *file, uint32_t encode_size) {
 	}
 }
 
-static inline size_t max3(size_t a, size_t b, size_t c) {
-  size_t m = a;
-  if (b > m)
-    m = b;
-  if (c > m)
-    m = c;
-  return m;
-}
-
 bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
   struct file_buffer file;
   if (!file_buffer_read(&file, path))
