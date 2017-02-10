@@ -20,7 +20,7 @@ include_directories(${SDL_IMAGE_INCLUDE_DIRS})
 include_directories(${LIBUV_INCLUDE_DIRS})
 include_directories(${SDL2_IMAGE_INCLUDE_DIR})
 
-set(lstd_src src/array.c src/buffer.c src/filebuf.c src/hashtable.c src/heap.c src/list.c src/vecmath.c)
+set(lstd_src src/array.c src/buffer.c src/filebuf.c src/hashtable.c src/heap.c src/list.c src/vecmath.c src/log.c)
 add_library(lstd ${lstd_src})
 
 
