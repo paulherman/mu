@@ -37,6 +37,7 @@ void client_on_connect(uv_connect_t *connection, int status) {
   if (status < 0) {
     printf("error");
   }
+  printf("done\n");
 
   client_send_handshake(stream);
   uv_read_start(stream, buf_alloc, client_on_read);

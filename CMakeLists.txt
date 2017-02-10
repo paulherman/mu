@@ -31,7 +31,7 @@ set(client_src src/bmd.c src/camera.c src/light.c src/mesh.c src/renderable.c sr
 add_executable(client ${client_src})
 target_link_libraries(client lstd lcommon m ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${SDL2_LIBRARY} ${LIBUV_LIBRARIES} ${SDL2_IMAGE_LIBRARY})
 
-set(server_src src/server.c)
+set(server_src src/server.c src/server_connection.c)
 add_executable(server ${server_src})
 target_link_libraries(server lstd lcommon m ${LIBUV_LIBRARIES})
 
