@@ -12,8 +12,7 @@
 #include "light.h"
 #include "error.h"
 #include "bmd.h"
-#include "itemdef.h"
-#include "map.h"
+#include "log.h"
 #include "client.h"
 #include "client_connection.h"
 
@@ -29,7 +28,7 @@ int main(int argc, char **argv) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  window = SDL_CreateWindow("muie", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 512, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+  window = SDL_CreateWindow("MU", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 512, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
 
@@ -48,7 +47,8 @@ int main(int argc, char **argv) {
   *(struct light *)buffer_get(&lights, 0) = light_new(0, 0, 0, 1.0, 1.0, 1.0);
 
   struct bmd_entity bmd;
-  printf("Mesh loaded %d\n", bmd_load(&bmd, "./res/Sword01.bmd", "./res/"));
+  if (!bmd_load(&bmd, "./res/Sword01.bmd", "./res/"))
+    debug("Mesh %s not loaded\n", "./res/Sword01.bmd");
 
   bool key_up = false, key_down = false;
   while (state.running) {

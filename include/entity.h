@@ -3,6 +3,14 @@
 
 #include "uv.h"
 
+#define VIEWPORT_WIDTH 15
+#define VIEWPORT_HEIGHT 15
+#define MAX_NUM_INVENTORY_ITEMS 255
+#define MAX_NUM_ENTITIES 10000
+#define MAX_ENTITY_NAME_LENGTH 10
+
+#include "player.h"
+
 enum entity_type {
   ENTITY_EMPTY,
   ENTITY_PLAYER,
@@ -11,34 +19,19 @@ enum entity_type {
   NUM_ENTITY_TYPES
 };
 
-#define VIEWPORT_WIDTH 15
-#define VIEWPORT_HEIGHT 15
-#define MAX_NUM_INVENTORY_ITEMS 255
-#define MAX_NUM_ENTITIES 10000
-
-struct entity_player {
-  char name[10];
-  struct account *account;
-  struct entity *viewport_players[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
-  struct item *viewport_items[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
-  struct item *inventory[MAX_NUM_INVENTORY_ITEMS];
-  uv_tcp_t *connection;
-  uint64_t last_tick;
-};
-
-struct entity_monster {
+struct monster {
   struct item *inventory[MAX_NUM_INVENTORY_ITEMS];
 };
 
-struct entity_npc {
+struct npc {
 };
 
 struct entity {
   int type;
   union {
-    struct entity_player player;
-    struct entity_monster monster;
-    struct entity_npc npc;
+    struct player player;
+    struct monster monster;
+    struct npc npc;
   };
 };
 
