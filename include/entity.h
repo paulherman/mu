@@ -1,6 +1,8 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "uv.h"
+
 enum entity_type {
   ENTITY_EMPTY,
   ENTITY_PLAYER,
@@ -20,6 +22,8 @@ struct entity_player {
   struct entity *viewport_players[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
   struct item *viewport_items[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
   struct item *inventory[MAX_NUM_INVENTORY_ITEMS];
+  uv_tcp_t *connection;
+  uint64_t last_tick;
 };
 
 struct entity_monster {
