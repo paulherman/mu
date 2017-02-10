@@ -10,7 +10,7 @@ find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(Libuv REQUIRED)
 
-add_compile_options(-std=c11 -Wall)
+add_compile_options(-std=gnu11 -Wall)
 
 include_directories(include)
 include_directories(${SDL2_INCLUDE_DIR})
@@ -27,7 +27,7 @@ add_library(lstd ${lstd_src})
 set(common_src src/itemdef.c src/item.c src/map.c)
 add_library(lcommon ${common_src})
 
-set(client_src src/bmd.c src/camera.c src/light.c src/mesh.c src/renderable.c src/shader.c src/texture.c src/transformation.c src/client.c)
+set(client_src src/bmd.c src/camera.c src/light.c src/mesh.c src/renderable.c src/shader.c src/texture.c src/transformation.c src/client.c src/client_connection.c)
 add_executable(client ${client_src})
 target_link_libraries(client lstd lcommon m ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIES} ${SDL2_LIBRARY} ${LIBUV_LIBRARIES} ${SDL2_IMAGE_LIBRARY})
 

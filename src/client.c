@@ -1,6 +1,9 @@
 #include <stdbool.h>
+
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
+#include "uv.h"
+
 #include "mesh.h"
 #include "shader.h"
 #include "texture.h"
@@ -12,6 +15,7 @@
 #include "itemdef.h"
 #include "map.h"
 #include "client.h"
+#include "client_connection.h"
 
 int main(int argc, char **argv) {
   SDL_Window *window;
@@ -27,6 +31,9 @@ int main(int argc, char **argv) {
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
 
+  uv_loop_t *uv_loop = uv_default_loop();
+  client_connect(uv_loop, SERVER_ADDRESS, SERVER_PORT);
+
   struct shader shader;
   printf("Material shader loaded %d\n", shader_load(&shader, "./res/shader.vert", "./res/shader.frag") == SUCCESS);
 
@@ -41,9 +48,8 @@ int main(int argc, char **argv) {
   struct bmd_entity bmd;
   printf("Mesh loaded %d\n", bmd_load(&bmd, "./res/Sword01.bmd", "./res/"));
 
-  bool running = true;
   bool key_up = false, key_down = false;
-  while (running) {
+  while (client_running) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -81,12 +87,14 @@ int main(int argc, char **argv) {
           break;
         }
         case SDL_QUIT:
-          running = false;
+          client_disconnect();
           break;
         default:
           break;
       }
     }
+
+    uv_run(uv_loop, UV_RUN_NOWAIT);
 
     transformation_rotate(&transformation, 0.0, 0.01, 0.0);
 
@@ -114,6 +122,9 @@ int main(int argc, char **argv) {
 
   bmd_delete(&bmd);
   shader_delete(&shader);
+
+  uv_loop_close(uv_loop);
+
   SDL_GL_DeleteContext(gl_context);
   SDL_DestroyWindow(window);
   IMG_Quit();
