@@ -241,14 +241,6 @@ struct mat4f mat4f_get_rotation(struct mat4f a) {
   return res;
 }
 
-void mat4f_dump(FILE *f, struct mat4f matrix) {
-  for (size_t i = 0; i < 4; i++) {
-    for (size_t j = 0; j < 4; j++)
-      printf("%f ", matrix.elems[i][j]);
-    printf("\n");
-  }
-}
-
 static inline float pi() {
   return acos(-1.0);
 }

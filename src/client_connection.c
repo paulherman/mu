@@ -3,8 +3,7 @@
 #include <stdbool.h>
 #include "client_connection.h"
 #include "client.h"
-
-bool client_running = true;
+#include "log.h"
 
 static void buf_alloc(uv_handle_t *handle, size_t size, uv_buf_t *buf) {
   buf->base = malloc(size);
@@ -39,10 +38,11 @@ void client_disconnect() {
 
 void client_on_connect(uv_connect_t *connection, int status) {
   if (status < 0) {
-    printf("error");
+    log_error("Unable to connect to server");
+    client_disconnect();
   } else {
     uv_stream_t *stream = connection->handle;
-    printf("Connected to server\n");
+    log_info("Connected to server");
 
     state.last_tick = state.ticks;
     uv_read_start(stream, buf_alloc, client_on_read);
@@ -64,8 +64,7 @@ void client_on_tick(uv_timer_t *timer) {
   state.ticks++;
   if (state.ticks - state.last_tick > CLIENT_MAX_IDLE_TICKS) {
     client_disconnect();
-    printf("Disconnected due to idling\n");
-    fflush(stdout);
+    log_error("Disconnected from server due to idling");
   }
 }
 

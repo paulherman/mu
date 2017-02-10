@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <inttypes.h>
 #include "server_connection.h"
+#include "log.h"
 #include "server.h"
 
 static void buf_alloc(uv_handle_t *handle, size_t size, uv_buf_t *buf) {
@@ -14,17 +15,26 @@ static void buf_free(const uv_buf_t *buf) {
   free(buf->base);
 }
 
-void server_listen(int port) {
+bool server_listen(int port) {
   uv_timer_init(state.uv_loop, &state.timer);
   uv_timer_start(&state.timer, server_on_tick, SERVER_TIMER_TIME, SERVER_TIMER_TIME);
 
   struct sockaddr_in addr;
   uv_ip4_addr("0.0.0.0", port, &addr);
 
-  uv_tcp_init(state.uv_loop, &state.tcp_server);
-  uv_tcp_bind(&state.tcp_server, (const struct sockaddr *)&addr, 0);
+  if (uv_tcp_init(state.uv_loop, &state.tcp_server) != 0) {
+    return false;
+  }
 
-  uv_listen((uv_stream_t *)&state.tcp_server, 128, server_on_connect);
+  if (uv_tcp_bind(&state.tcp_server, (const struct sockaddr *)&addr, 0) != 0) {
+    return false;
+  }
+
+  if (uv_listen((uv_stream_t *)&state.tcp_server, 128, server_on_connect) != 0) {
+    return false;
+  }
+
+  return true;
 }
 
 void server_on_connect(uv_stream_t *server, int status) {
@@ -38,7 +48,7 @@ void server_on_connect(uv_stream_t *server, int status) {
       for (size_t i = 0; i < MAX_NUM_ENTITIES && !accepted; i++) {
         struct entity *entity = &state.entities[i]; 
         if (entity->type == ENTITY_EMPTY) {
-          printf("Client connected at index %zu at %" PRIu64 "\n", i, state.ticks);
+          log_info("Client connected at index %zu at %" PRIu64 "\n", i, state.ticks);
           entity->type = ENTITY_PLAYER;
           entity->player.connection = connection;
           entity->player.last_tick = state.ticks;
@@ -68,7 +78,7 @@ void server_on_tick(uv_timer_t *timer) {
       case ENTITY_PLAYER:
         if (state.ticks - entity->player.last_tick > MAX_NUM_IDLE_TICKS) {
           server_disconnect_player(i);
-          printf("Closing inactive client.");
+          log_error("Closing inactive client %zu", i);
           fflush(stdout);
         }
         break;

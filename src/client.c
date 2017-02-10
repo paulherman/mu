@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
   client_connect(SERVER_ADDRESS, SERVER_PORT);
 
   struct shader shader;
-  printf("Material shader loaded %d\n", shader_load(&shader, "./res/shader.vert", "./res/shader.frag") == SUCCESS);
+  shader_load(&shader, "./res/shader.vert", "./res/shader.frag");
 
   struct transformation transformation = transformation_new(0, 0.0, -10.0, 0.0, 0, 0.0, 0.1);
   struct camera camera = camera_new(deg(70.0), 0.1, 1000.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
@@ -47,8 +47,7 @@ int main(int argc, char **argv) {
   *(struct light *)buffer_get(&lights, 0) = light_new(0, 0, 0, 1.0, 1.0, 1.0);
 
   struct bmd_entity bmd;
-  if (!bmd_load(&bmd, "./res/Sword01.bmd", "./res/"))
-    debug("Mesh %s not loaded\n", "./res/Sword01.bmd");
+  bmd_load(&bmd, "./res/Sword01.bmd", "./res/");
 
   bool key_up = false, key_down = false;
   while (state.running) {
@@ -116,8 +115,7 @@ int main(int argc, char **argv) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
-    if (!bmd_render(&bmd, &shader, &camera, &transformation, &lights))
-      printf("Mesh rendering error\n");
+    bmd_render(&bmd, &shader, &camera, &transformation, &lights);
 
     SDL_GL_SwapWindow(window);
   }
