@@ -9,4 +9,19 @@
 #define SERVER_PORT 3000 
 #endif
 
+#define CLIENT_TIMER_TIME 300
+#define CLIENT_MAX_IDLE_TICKS 10
+
+struct client_state {
+  bool running;
+  uint64_t ticks;
+  uint64_t last_tick;
+  uv_loop_t *uv_loop;
+  uv_tcp_t tcp_client;
+  uv_connect_t tcp_connection;
+  uv_timer_t timer;
+};
+
+extern struct client_state state;
+
 #endif

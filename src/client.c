@@ -17,6 +17,8 @@
 #include "client.h"
 #include "client_connection.h"
 
+struct client_state state;
+
 int main(int argc, char **argv) {
   SDL_Window *window;
   SDL_GLContext gl_context;
@@ -31,8 +33,8 @@ int main(int argc, char **argv) {
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
 
-  uv_loop_t *uv_loop = uv_default_loop();
-  client_connect(uv_loop, SERVER_ADDRESS, SERVER_PORT);
+  state.uv_loop = uv_default_loop();
+  client_connect(SERVER_ADDRESS, SERVER_PORT);
 
   struct shader shader;
   printf("Material shader loaded %d\n", shader_load(&shader, "./res/shader.vert", "./res/shader.frag") == SUCCESS);
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
   printf("Mesh loaded %d\n", bmd_load(&bmd, "./res/Sword01.bmd", "./res/"));
 
   bool key_up = false, key_down = false;
-  while (client_running) {
+  while (state.running) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
       switch (event.type) {
@@ -94,7 +96,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    uv_run(uv_loop, UV_RUN_NOWAIT);
+    uv_run(state.uv_loop, UV_RUN_NOWAIT);
 
     transformation_rotate(&transformation, 0.0, 0.01, 0.0);
 
@@ -123,7 +125,7 @@ int main(int argc, char **argv) {
   bmd_delete(&bmd);
   shader_delete(&shader);
 
-  uv_loop_close(uv_loop);
+  uv_loop_close(state.uv_loop);
 
   SDL_GL_DeleteContext(gl_context);
   SDL_DestroyWindow(window);

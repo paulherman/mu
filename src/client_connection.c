@@ -1,6 +1,8 @@
 #include <stdlib.h>
+#include <inttypes.h>
 #include <stdbool.h>
 #include "client_connection.h"
+#include "client.h"
 
 bool client_running = true;
 
@@ -13,37 +15,42 @@ static void buf_free(const uv_buf_t *buf) {
   free(buf->base);
 }
 
-static uv_tcp_t tcp_client;
-static uv_connect_t tcp_connection;
 
-void client_connect(uv_loop_t *uv_loop, const char *ip, int port) {
+void client_connect(const char *ip, int port) {
+  state.running = true;
+  state.ticks = 0;
+  state.last_tick = 0;
+
+  uv_timer_init(state.uv_loop, &state.timer);
+  uv_timer_start(&state.timer, client_on_tick, CLIENT_TIMER_TIME, CLIENT_TIMER_TIME);
+
   struct sockaddr_in server_addr;
   uv_ip4_addr(ip, port, &server_addr);
 
-  uv_tcp_init(uv_loop, &tcp_client);
+  uv_tcp_init(state.uv_loop, &state.tcp_client);
 
-  uv_tcp_connect(&tcp_connection, &tcp_client, (const struct sockaddr *)&server_addr, client_on_connect);
+  uv_tcp_connect(&state.tcp_connection, &state.tcp_client, (const struct sockaddr *)&server_addr, client_on_connect);
 }
 
 void client_disconnect() {
-  uv_close((uv_handle_t *)&tcp_client, client_on_close);
-  fflush(stdout);
-  client_running = false;
+  uv_close((uv_handle_t *)&state.tcp_client, client_on_close);
+  state.running = false;
 }
 
 void client_on_connect(uv_connect_t *connection, int status) {
-  uv_stream_t *stream = connection->handle;
-
   if (status < 0) {
     printf("error");
-  }
-  printf("done\n");
+  } else {
+    uv_stream_t *stream = connection->handle;
+    printf("Connected to server\n");
 
-  client_send_handshake(stream);
-  uv_read_start(stream, buf_alloc, client_on_read);
+    state.last_tick = state.ticks;
+    uv_read_start(stream, buf_alloc, client_on_read);
+  }
 }
 
 void client_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf) {
+  state.last_tick = state.ticks;
   buf_free(buf);
 }
 
@@ -51,6 +58,15 @@ void client_on_close(uv_handle_t *handle) {
 }
 
 void client_on_write(uv_write_t* req, int status) {
+}
+
+void client_on_tick(uv_timer_t *timer) {
+  state.ticks++;
+  if (state.ticks - state.last_tick > CLIENT_MAX_IDLE_TICKS) {
+    client_disconnect();
+    printf("Disconnected due to idling\n");
+    fflush(stdout);
+  }
 }
 
 void client_send_handshake(uv_stream_t *stream) {

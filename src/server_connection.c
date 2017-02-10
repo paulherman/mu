@@ -14,20 +14,17 @@ static void buf_free(const uv_buf_t *buf) {
   free(buf->base);
 }
 
-static uv_tcp_t tcp_server;
-static uv_timer_t server_timer;
-
 void server_listen(int port) {
-  uv_timer_init(state.uv_loop, &server_timer);
-  uv_timer_start(&server_timer, server_on_tick, SERVER_TIMER_TIME, SERVER_TIMER_TIME);
+  uv_timer_init(state.uv_loop, &state.timer);
+  uv_timer_start(&state.timer, server_on_tick, SERVER_TIMER_TIME, SERVER_TIMER_TIME);
 
   struct sockaddr_in addr;
   uv_ip4_addr("0.0.0.0", port, &addr);
 
-  uv_tcp_init(state.uv_loop, &tcp_server);
-  uv_tcp_bind(&tcp_server, (const struct sockaddr *)&addr, 0);
+  uv_tcp_init(state.uv_loop, &state.tcp_server);
+  uv_tcp_bind(&state.tcp_server, (const struct sockaddr *)&addr, 0);
 
-  uv_listen((uv_stream_t *)&tcp_server, 128, server_on_connect);
+  uv_listen((uv_stream_t *)&state.tcp_server, 128, server_on_connect);
 }
 
 void server_on_connect(uv_stream_t *server, int status) {
@@ -72,6 +69,7 @@ void server_on_tick(uv_timer_t *timer) {
         if (state.ticks - entity->player.last_tick > MAX_NUM_IDLE_TICKS) {
           server_disconnect_player(i);
           printf("Closing inactive client.");
+          fflush(stdout);
         }
         break;
     }

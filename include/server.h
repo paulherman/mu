@@ -11,6 +11,8 @@ struct server_state {
   struct entity entities[MAX_NUM_ENTITIES];
   uint64_t ticks;
   uv_loop_t *uv_loop;
+  uv_tcp_t tcp_server;
+  uv_timer_t timer;
 };
 
 extern struct server_state state;
