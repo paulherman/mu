@@ -9,13 +9,8 @@ struct server_state state;
 
 int main(int argc, char **argv) {
   state.uv_loop = uv_default_loop();
-  if (!server_listen(SERVER_PORT)) {
-    log_error("Unable to listen on port %d", SERVER_PORT);
-  } else {
-    log_info("Listening on port %d", SERVER_PORT);
-    while (state.running) {
-      uv_run(state.uv_loop, UV_RUN_NOWAIT);
-    }
+  if (server_listen(SERVER_PORT)) {
+    uv_run(state.uv_loop, UV_RUN_DEFAULT);
   }
   uv_loop_close(state.uv_loop);
 

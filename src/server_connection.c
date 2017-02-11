@@ -24,55 +24,69 @@ bool server_listen(int port) {
   struct sockaddr_in addr;
   uv_ip4_addr("0.0.0.0", port, &addr);
 
-  if (uv_tcp_init(state.uv_loop, &state.tcp_server) != 0) {
+  for (int err = uv_tcp_init(state.uv_loop, &state.tcp_server); err < 0;) {
+    log_error("Unable to initialize TCP server - %s", uv_strerror(err));
     return false;
   }
 
-  if (uv_tcp_bind(&state.tcp_server, (const struct sockaddr *)&addr, 0) != 0) {
+  for (int err = uv_tcp_bind(&state.tcp_server, (const struct sockaddr *)&addr, 0); err < 0;) {
+    log_error("Unable to bind server to port %d - %s", port, uv_strerror(err));
     return false;
   }
 
-  if (uv_listen((uv_stream_t *)&state.tcp_server, 128, server_on_connect) != 0) {
+  for (int err = uv_listen((uv_stream_t *)&state.tcp_server, 128, server_on_connect); err < 0;) {
+    log_error("Unable to listen on port %d - %s", port, uv_strerror(err));
     return false;
   }
 
   state.running = true;
+  log_info("Server started port %d", port);
 
   return true;
 }
 
 void server_on_connect(uv_stream_t *server, int status) {
-  if (status == -1) {
-    log_error("Error on client connection");
+  if (status < 0) {
+    log_error("Error on client connection - %s", uv_strerror(status));
   } else {
     uv_tcp_t *connection = calloc(1, sizeof(uv_tcp_t));
-    uv_tcp_init(state.uv_loop, connection);
-    bool accepted = false;
+    for (int err = uv_tcp_init(state.uv_loop, connection); err < 0;) {
+      log_error("Unable to initialize TCP connection for client - %s", uv_strerror(err));
+      server_close_connection(connection);
+      return;
+    }
 
-    if (uv_accept(server, (uv_stream_t *)connection) == 0) {
-      for (size_t i = 0; i < MAX_NUM_ENTITIES && !accepted; i++) {
-        struct entity *entity = &state.entities[i]; 
-        if (entity->type == ENTITY_EMPTY) {
-          log_info("Client connected at index %zu", i, state.ticks);
-          entity->type = ENTITY_PLAYER;
-          entity->player.connection = connection;
-          entity->player.last_tick = state.ticks;
-          uv_read_start((uv_stream_t *)connection, buf_alloc, server_on_read);
-          accepted = true;
-        }
+    for (int err = uv_accept(server, (uv_stream_t *)connection); err < 0;) {
+      log_error("Unable to accept client connection - %s", uv_strerror(err));
+      server_close_connection(connection);
+      return;
+    }
+
+    for (size_t i = 0; i < MAX_NUM_ENTITIES; i++) {
+      struct entity *entity = &state.entities[i]; 
+      if (entity->type == ENTITY_EMPTY) {
+        log_info("Client connected at index %zu", i);
+        log_debug("Client %zu uses handle %p", i, connection);
+        entity->type = ENTITY_PLAYER;
+        entity->player.connection = connection;
+        entity->player.last_tick = state.ticks;
+        uv_read_start((uv_stream_t *)connection, buf_alloc, server_on_read);
+        return;
       }
     }
 
-    if (!accepted) {
-      log_error("Error on client connection");
-      server_close_connection(connection);
-    }
+    log_error("Unable to allocate entity for client");
+    server_close_connection(connection);
   }
 }
 
 void server_close_connection(uv_tcp_t *connection) {
-  uv_close((uv_handle_t *)connection, NULL);
-  free(connection);
+  uv_close((uv_handle_t *)connection, server_on_client_close);
+}
+
+void server_on_client_close(uv_handle_t *handle) {
+  log_debug("Closed handle %p", handle);
+  free(handle);
 }
 
 void server_on_tick(uv_timer_t *timer) {
@@ -83,8 +97,8 @@ void server_on_tick(uv_timer_t *timer) {
     switch (entity->type) {
       case ENTITY_PLAYER:
         if (state.ticks - entity->player.last_tick > MAX_NUM_IDLE_TICKS) {
-          server_disconnect_player(i);
           log_error("Closing inactive client %zu", i);
+          server_disconnect_player(i);
         }
         break;
     }
