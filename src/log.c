@@ -14,7 +14,7 @@ static void log_print(const char *tag, const char *message, va_list args) {
   gmtime_s(&current_time, &current_time_buf);
 
   char current_time_str[256];
-  strftime(current_time_str, 256, "%F - %T", &current_time_buf);
+  strftime(current_time_str, 256, "%F %T", &current_time_buf);
 
   size_t message_meta_len = strlen(message) + 256 + strlen(tag) + 16;
   char *message_meta = calloc(message_meta_len, sizeof(char));
