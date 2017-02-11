@@ -15,7 +15,8 @@
 struct client_state {
   bool running;
   uint64_t ticks;
-  uint64_t last_tick;
+  uint64_t last_read_tick;
+  uint64_t last_write_tick;
   int port;
   size_t network_errors;
   const char *ip;

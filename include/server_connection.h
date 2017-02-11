@@ -16,4 +16,6 @@ bool server_listen(int port);
 void server_close_connection(uv_tcp_t *connection);
 void server_disconnect_player(size_t index);
 
+bool find_entity_by_connection(uv_tcp_t *connection, size_t *index);
+
 #endif

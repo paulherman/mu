@@ -13,6 +13,7 @@ void client_on_tick(uv_timer_t *timer);
 
 bool client_connect(const char *ip, int port);
 void client_disconnect();
-void client_send_handshake(uv_stream_t *stream);
+
+bool client_send_ping();
 
 #endif
