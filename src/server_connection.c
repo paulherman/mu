@@ -16,6 +16,8 @@ static void buf_free(const uv_buf_t *buf) {
 }
 
 bool server_listen(int port) {
+  state.running = false;
+
   uv_timer_init(state.uv_loop, &state.timer);
   uv_timer_start(&state.timer, server_on_tick, SERVER_TIMER_TIME, SERVER_TIMER_TIME);
 
@@ -34,11 +36,14 @@ bool server_listen(int port) {
     return false;
   }
 
+  state.running = true;
+
   return true;
 }
 
 void server_on_connect(uv_stream_t *server, int status) {
   if (status == -1) {
+    log_error("Error on client connection");
   } else {
     uv_tcp_t *connection = calloc(1, sizeof(uv_tcp_t));
     uv_tcp_init(state.uv_loop, connection);
@@ -48,7 +53,7 @@ void server_on_connect(uv_stream_t *server, int status) {
       for (size_t i = 0; i < MAX_NUM_ENTITIES && !accepted; i++) {
         struct entity *entity = &state.entities[i]; 
         if (entity->type == ENTITY_EMPTY) {
-          log_info("Client connected at index %zu at %" PRIu64 "\n", i, state.ticks);
+          log_info("Client connected at index %zu", i, state.ticks);
           entity->type = ENTITY_PLAYER;
           entity->player.connection = connection;
           entity->player.last_tick = state.ticks;
@@ -59,6 +64,7 @@ void server_on_connect(uv_stream_t *server, int status) {
     }
 
     if (!accepted) {
+      log_error("Error on client connection");
       server_close_connection(connection);
     }
   }

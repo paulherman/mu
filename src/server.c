@@ -13,7 +13,9 @@ int main(int argc, char **argv) {
     log_error("Unable to listen on port %d", SERVER_PORT);
   } else {
     log_info("Listening on port %d", SERVER_PORT);
-    uv_run(state.uv_loop, UV_RUN_DEFAULT);
+    while (state.running) {
+      uv_run(state.uv_loop, UV_RUN_NOWAIT);
+    }
   }
   uv_loop_close(state.uv_loop);
 
