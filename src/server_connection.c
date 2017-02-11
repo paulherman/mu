@@ -85,7 +85,6 @@ void server_on_tick(uv_timer_t *timer) {
         if (state.ticks - entity->player.last_tick > MAX_NUM_IDLE_TICKS) {
           server_disconnect_player(i);
           log_error("Closing inactive client %zu", i);
-          fflush(stdout);
         }
         break;
     }
@@ -96,6 +95,7 @@ void server_disconnect_player(size_t index) {
   assert(index < MAX_NUM_ENTITIES && state.entities[index].type == ENTITY_PLAYER);
   server_close_connection(state.entities[index].player.connection);
   state.entities[index].type = ENTITY_EMPTY;
+  log_info("Disconnected player %zu", index);
 }
 
 void server_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf) {
