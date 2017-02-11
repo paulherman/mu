@@ -9,6 +9,7 @@ find_package(SDL2_image REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(Libuv REQUIRED)
+find_package(SQLite3 REQUIRED)
 
 add_compile_options(-std=gnu11 -Wall)
 
@@ -19,6 +20,7 @@ include_directories(${GLEW_INCLUDE_PATH})
 include_directories(${SDL_IMAGE_INCLUDE_DIRS})
 include_directories(${LIBUV_INCLUDE_DIRS})
 include_directories(${SDL2_IMAGE_INCLUDE_DIR})
+include_directories(${SQLITE3_INCLUDE_DIRS})
 
 set(lstd_src src/array.c src/buffer.c src/filebuf.c src/hashtable.c src/heap.c src/list.c src/vecmath.c src/log.c)
 add_library(lstd ${lstd_src})
@@ -33,6 +35,6 @@ target_link_libraries(client lstd lcommon m ${OPENGL_gl_LIBRARY} ${GLEW_LIBRARIE
 
 set(server_src src/server.c src/server_connection.c)
 add_executable(server ${server_src})
-target_link_libraries(server lstd lcommon m ${LIBUV_LIBRARIES})
+target_link_libraries(server lstd lcommon m ${LIBUV_LIBRARIES} ${SQLITE3_LIBRARIES})
 
 add_custom_target(res COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/res ${CMAKE_CURRENT_BINARY_DIR}/res)
