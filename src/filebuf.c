@@ -6,7 +6,7 @@
 bool file_buffer_read(struct file_buffer *fb, const char *path) {
   FILE *file = fopen(path, "rb");
   if (file == NULL)
-    false;
+    return false;
 
   uint8_t buffer[4096];
   uint8_t *contents = NULL;
