@@ -11,7 +11,7 @@ find_package(GLEW REQUIRED)
 find_package(Libuv REQUIRED)
 find_package(SQLite3 REQUIRED)
 
-add_compile_options(-std=gnu11 -Wall)
+add_compile_options(-std=gnu11 -Wall -fms-extensions)
 
 include_directories(include)
 include_directories(${SDL2_INCLUDE_DIR})

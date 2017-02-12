@@ -6,7 +6,7 @@
 #include "const.h"
 
 struct server_state {
-  struct entity entities[MAX_NUM_ENTITIES];
+  struct entity_server entities[MAX_NUM_ENTITIES];
   uint64_t ticks;
   bool running;
   uv_loop_t *uv_loop;

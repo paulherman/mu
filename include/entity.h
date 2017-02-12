@@ -3,24 +3,7 @@
 
 #include "uv.h"
 #include "const.h"
-
-enum character_class {
-  CHARACTER_WIZARD,
-  CHARACTER_KNIGHT,
-  CHARACTER_ELF,
-  CHARACTER_GLADIATOR,
-  CHARACTER_LORD
-};
-
-struct player {
-  char name[MAX_ENTITY_NAME_LENGTH];
-  struct account *account;
-  struct entity *viewport_players[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
-  struct item *viewport_items[VIEWPORT_WIDTH * VIEWPORT_HEIGHT];
-  struct item *inventory[MAX_NUM_INVENTORY_ITEMS];
-  uv_tcp_t *connection;
-  uint64_t last_tick;
-};
+#include "player.h"
 
 enum entity_type {
   ENTITY_EMPTY,
@@ -37,10 +20,19 @@ struct monster {
 struct npc {
 };
 
-struct entity {
+struct entity_server {
   int type;
   union {
-    struct player player;
+    struct player_server player;
+    struct monster monster;
+    struct npc npc;
+  };
+};
+
+struct entity_client {
+  int type;
+  union {
+    struct player_client player;
     struct monster monster;
     struct npc npc;
   };

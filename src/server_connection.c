@@ -17,7 +17,7 @@ static void buf_free(const uv_buf_t *buf) {
 
 bool find_entity_by_connection(uv_tcp_t *connection, size_t *index) {
   for (size_t i = 0; i < MAX_NUM_ENTITIES; i++) {
-    struct entity *entity = &state.entities[i];
+    struct entity_server *entity = &state.entities[i];
     if (entity->type == ENTITY_PLAYER && entity->player.connection == connection)
       return entity;
   }
@@ -72,7 +72,7 @@ void server_on_connect(uv_stream_t *server, int status) {
     }
 
     for (size_t i = 0; i < MAX_NUM_ENTITIES; i++) {
-      struct entity *entity = &state.entities[i]; 
+      struct entity_server *entity = &state.entities[i]; 
       if (entity->type == ENTITY_EMPTY) {
         log_info("Client connected at index %zu", i);
         entity->type = ENTITY_PLAYER;
@@ -105,7 +105,7 @@ void server_on_tick(uv_timer_t *timer) {
   state.ticks++;
 
   for (size_t i = 0; i < MAX_NUM_ENTITIES; i++) {
-    struct entity *entity = &state.entities[i];
+    struct entity_server *entity = &state.entities[i];
     switch (entity->type) {
       case ENTITY_PLAYER:
         if (state.ticks - entity->player.last_tick > MAX_NUM_IDLE_TICKS) {
@@ -128,7 +128,7 @@ void server_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf) {
   if (find_entity_by_connection((uv_tcp_t *)stream, &index)) {
     log_debug("Received data from client %zu", index);
 
-    struct entity *entity = &state.entities[index];
+    struct entity_server *entity = &state.entities[index];
     entity->player.last_tick = state.ticks;
   }
   buf_free(buf);
