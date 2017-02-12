@@ -15,6 +15,7 @@
 #include "log.h"
 #include "client.h"
 #include "client_connection.h"
+#include "const.h"
 
 struct client_state state;
 

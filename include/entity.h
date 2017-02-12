@@ -2,12 +2,7 @@
 #define ENTITY_H
 
 #include "uv.h"
-
-#define VIEWPORT_WIDTH 15
-#define VIEWPORT_HEIGHT 15
-#define MAX_NUM_INVENTORY_ITEMS 255
-#define MAX_NUM_ENTITIES 10000
-#define MAX_ENTITY_NAME_LENGTH 10
+#include "const.h"
 
 enum character_class {
   CHARACTER_WIZARD,

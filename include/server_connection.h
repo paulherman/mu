@@ -3,9 +3,7 @@
 
 #include <stdbool.h>
 #include "uv.h"
-
-#define SERVER_TIMER_TIME 300
-#define MAX_NUM_IDLE_TICKS 10
+#include "const.h"
 
 void server_on_connect(uv_stream_t *server, int status);
 void server_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf);

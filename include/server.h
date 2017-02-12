@@ -3,10 +3,7 @@
 
 #include <stdbool.h>
 #include "entity.h"
-
-#ifndef SERVER_PORT
-#define SERVER_PORT 3000 
-#endif
+#include "const.h"
 
 struct server_state {
   struct entity entities[MAX_NUM_ENTITIES];

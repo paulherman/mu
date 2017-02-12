@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include "uv.h"
 
-
 void client_on_connect(uv_connect_t *connection, int status);
 void client_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf);
 void client_on_close(uv_handle_t *handle);

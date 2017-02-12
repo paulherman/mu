@@ -1,17 +1,6 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#ifndef SERVER_ADDRESS
-#define SERVER_ADDRESS "0.0.0.0"
-#endif
-
-#ifndef SERVER_PORT
-#define SERVER_PORT 3000 
-#endif
-
-#define CLIENT_TIMER_TIME 300
-#define CLIENT_MAX_IDLE_TICKS 10
-
 struct client_state {
   bool running;
   uint64_t ticks;
