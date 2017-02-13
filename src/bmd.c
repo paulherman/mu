@@ -3,6 +3,7 @@
 #include <assert.h>
 #include "filebuf.h"
 #include "bmd.h"
+#include "xor_decrypt.h"
 
 static inline bool bmd_read_bone(struct file_buffer *file, struct bmd_animation *animations, size_t num_animations, struct bmd_bone *bone) {
   if (!file_buffer_read_bool(file, &bone->empty))
@@ -99,19 +100,6 @@ err_clean:
   return false;
 }
 
-static const uint8_t keys[16] = {
-  0xd1, 0x73, 0x52, 0xf6, 0xd2, 0x9a, 0xcb, 0x27, 0x3e, 0xaf, 0x59, 0x31, 0x37, 0xb3, 0xe7, 0xa2
-};
-
-static inline void bmd_decrypt(struct file_buffer *file, uint32_t encode_size) {
-	uint8_t key = 0x5E;
-  for (size_t i = file->position; i < file->length; i++) {
-		uint8_t encode = file->data[i];
-    file->data[i] = (file->data[i] ^ keys[i % 16]) - key;
-		key = encode + 0x3D;
-	}
-}
-
 bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
   struct file_buffer file;
   if (!file_buffer_read(&file, path))
@@ -127,7 +115,7 @@ bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
       uint32_t encode_size;
       if (!file_buffer_read_uint32(&file, &encode_size) || file.length != encode_size + 8)
         return false;
-      bmd_decrypt(&file, encode_size);
+      xor_decrypt(&file, encode_size);
       break;
     }
     default:

@@ -26,7 +26,7 @@ set(lstd_src src/array.c src/buffer.c src/filebuf.c src/hashtable.c src/heap.c s
 add_library(lstd ${lstd_src})
 
 
-set(common_src src/itemdef.c src/item.c src/map.c src/protocol.c)
+set(common_src src/itemdef.c src/item.c src/map.c src/protocol.c src/xor_decrypt.c)
 add_library(lcommon ${common_src})
 
 set(client_src src/bmd.c src/camera.c src/light.c src/mesh.c src/renderable.c src/shader.c src/texture.c src/transformation.c src/client.c src/client_connection.c)
