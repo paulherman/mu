@@ -18,10 +18,12 @@ static void buf_free(const uv_buf_t *buf) {
 bool find_entity_by_connection(uv_tcp_t *connection, size_t *index) {
   for (size_t i = 0; i < MAX_NUM_ENTITIES; i++) {
     struct entity_server *entity = &state.entities[i];
-    if (entity->type == ENTITY_PLAYER && entity->player.connection == connection)
-      return entity;
+    if (entity->type == ENTITY_PLAYER && entity->player.connection == connection) {
+      *index = i;
+      return true;
+    }
   }
-  return NULL;
+  return false;
 }
 
 bool server_listen(int port) {
@@ -75,6 +77,7 @@ void server_on_connect(uv_stream_t *server, int status) {
       struct entity_server *entity = &state.entities[i]; 
       if (entity->type == ENTITY_EMPTY) {
         log_info("Client connected at index %zu", i);
+        log_debug("Client at index %zu uses connection %p", i, connection);
         entity->type = ENTITY_PLAYER;
         entity->player.connection = connection;
         entity->player.last_tick = state.ticks;
@@ -96,7 +99,10 @@ void server_on_client_close(uv_handle_t *handle) {
   size_t index = 0;
   if (find_entity_by_connection((uv_tcp_t *)handle, &index)) {
     state.entities[index].type = ENTITY_EMPTY;
-    log_info("Disconnected player %zu", index);
+    log_info("Disconnected client %zu", index);
+    log_debug("Client %zu freed connection %p", index, handle);
+  } else {
+    log_error("Attempting to close unknown client %p", handle);
   }
   free(handle);
 }
@@ -113,6 +119,12 @@ void server_on_tick(uv_timer_t *timer) {
           server_disconnect_player(i);
         }
         break;
+      case ENTITY_EMPTY:
+        break;
+      case ENTITY_NPC:
+        break;
+      case ENTITY_MONSTER:
+        break;
     }
   }
 }
@@ -124,12 +136,16 @@ void server_disconnect_player(size_t index) {
 
 
 void server_on_read(uv_stream_t *stream, ssize_t length, const uv_buf_t *buf) {
-  size_t index = 0;
-  if (find_entity_by_connection((uv_tcp_t *)stream, &index)) {
-    log_debug("Received data from client %zu", index);
+  if (length < 0) {
+    server_close_connection((uv_tcp_t *)stream);
+  } else {
+    size_t index = 0;
+    if (find_entity_by_connection((uv_tcp_t *)stream, &index)) {
+      log_debug("Received data from client %zu on connection %p", index, stream);
 
-    struct entity_server *entity = &state.entities[index];
-    entity->player.last_tick = state.ticks;
+      struct entity_server *entity = &state.entities[index];
+      entity->player.last_tick = state.ticks;
+    }
+    buf_free(buf);
   }
-  buf_free(buf);
 }
