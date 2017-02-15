@@ -16,6 +16,7 @@
 #include "client.h"
 #include "client_connection.h"
 #include "const.h"
+#include "map.h"
 
 struct client_state state;
 
@@ -49,6 +50,9 @@ int main(int argc, char **argv) {
 
   struct bmd_entity bmd;
   bmd_load(&bmd, "./res/Sword01.bmd", "./res/");
+
+  struct map_client m;
+  map_client_load(&m, 2);
 
   bool key_up = false, key_down = false;
   while (state.running) {
