@@ -68,5 +68,6 @@ struct mat4f mat4f_projection(float aspect_ratio, float fov, float clip_near, fl
 
 float deg(float rad);
 float rad(float deg);
+float pi();
 
 #endif

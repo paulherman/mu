@@ -241,7 +241,7 @@ struct mat4f mat4f_get_rotation(struct mat4f a) {
   return res;
 }
 
-static inline float pi() {
+float pi() {
   return acos(-1.0);
 }
 
