@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include "filebuf.h"
+#include "log.h"
 #include "bmd.h"
 #include "xor_decrypt.h"
 
@@ -204,8 +205,7 @@ static inline bool bmd_texture_load(struct bmd_entity *entity, const char *textu
     }
 
     char *texture_path = calloc(strlen(texture_folder) + 32, sizeof(char));
-    strcat(texture_path, texture_folder);
-    strcat(texture_path, texture_name);
+    sprintf(texture_path, "%s/%s", texture_folder, texture_name);
 
     int result_code = SUCCESS;
     if (texture_name[texture_name_len - 1] == 'T') {
@@ -216,14 +216,16 @@ static inline bool bmd_texture_load(struct bmd_entity *entity, const char *textu
      result_code = texture_load(&entity->textures[i], texture_path);
     }
 
-    free(texture_path);
 
     if (result_code != SUCCESS) {
       for (size_t j = 0; j < i; j++)
         texture_delete(&entity->textures[j]);
       free(entity->textures);
+      log_error("Unable to load texture from %s", texture_path);
+      free(texture_path);
       return false;
     }
+    free(texture_path);
   }
   return true;
 }
@@ -274,8 +276,10 @@ static inline bool bmd_renderable_load(struct bmd_entity *entity) {
 }
 
 bool bmd_load(struct bmd_entity *entity, const char *mesh_path, const char *texture_folder) {
-  if (!bmd_mesh_load(&entity->mesh, mesh_path))
+  if (!bmd_mesh_load(&entity->mesh, mesh_path)) {
+    log_error("Unable to load mesh from %s", mesh_path);
     return false;
+  }
 
   if (!bmd_texture_load(entity, texture_folder)) {
     bmd_mesh_delete(&entity->mesh);

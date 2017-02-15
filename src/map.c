@@ -1,7 +1,9 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "SDL2/SDL_image.h"
 #include "map.h"
+#include "light.h"
 #include "filebuf.h"
 #include "log.h"
 #include "xor_decrypt.h"
@@ -97,7 +99,8 @@ bool map_object_load(struct map_objects *map_objects, const char *path) {
 
   xor_decrypt(&file, 0);
 
-  if (!file_buffer_read_uint16(&file, &map_objects->map_id))
+  uint16_t map_id; 
+  if (!file_buffer_read_uint16(&file, &map_id))
     goto error;
 
   if (!file_buffer_read_uint16(&file, &map_objects->num_objects))
@@ -112,22 +115,24 @@ bool map_object_load(struct map_objects *map_objects, const char *path) {
   map_objects->objects = calloc(map_objects->num_objects, sizeof(struct map_object_def));
   for (size_t i = 0; i < map_objects->num_objects; i++) {
     struct map_object_def *object = &map_objects->objects[i];
-    if (!file_buffer_read_int16(&file, &object->id)) {
+    if (!file_buffer_read_int16(&file, &object->id) || object->id < 0) {
       free(map_objects->objects);
       goto error;
     }
 
-    if (!file_buffer_read_array(&file, &object->position, sizeof(float), 3)) {
+    if (!file_buffer_read_array(&file, &object->transformation.position, sizeof(float), 3)) {
+      object->transformation.position = vec3f_scale(object->transformation.position, 0.01);
       free(map_objects->objects);
       goto error;
     }
 
-    if (!file_buffer_read_array(&file, &object->rotation, sizeof(float), 3)) {
+    if (!file_buffer_read_array(&file, &object->transformation.rotation, sizeof(float), 3)) {
+      object->transformation.rotation = vec3f_scale(object->transformation.rotation, pi() / 180.0);
       free(map_objects->objects);
       goto error;
     }
 
-    if (!file_buffer_read_float(&file, &object->scale)) {
+    if (!file_buffer_read_float(&file, &object->transformation.scale)) {
       free(map_objects->objects);
       goto error;
     }
@@ -144,6 +149,41 @@ void map_objects_delete(struct map_objects *map_objects) {
   free(map_objects->objects);
 }
 
+bool map_object_entities_load(struct map_client *map, const char *entity_folder_path) {
+  size_t max_entity_id = 0;
+  for (size_t i = 0; i < map->objects.num_objects; i++) {
+    if (map->objects.objects[i].id > max_entity_id)
+      max_entity_id = map->objects.objects[i].id;
+  }
+  max_entity_id++;
+  map->num_object_entities = max_entity_id;
+
+  bool used_entity_ids[max_entity_id];
+  for (size_t i = 0; i < max_entity_id; i++)
+    used_entity_ids[i] = false;
+
+  for (size_t i = 0; i < map->objects.num_objects; i++) {
+    used_entity_ids[map->objects.objects[i].id] = true;
+  }
+
+  map->object_entities = calloc(max_entity_id, sizeof(struct bmd_entity));
+  for (size_t i = 0; i < max_entity_id; i++) {
+    if (used_entity_ids[i]) {
+      char entity_path[MAX_MAP_PATH_LENGTH];
+      sprintf(entity_path, "%s/Object%02zu.bmd", entity_folder_path, i + 1);
+
+      struct bmd_entity *entity = &map->object_entities[i];
+      if (!bmd_load(entity, entity_path, entity_folder_path)) {
+        log_error("Unable to load entity %zu from %s", i + 1, entity_folder_path);
+        free(map->object_entities);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 bool map_client_load(struct map_client *map, size_t id) {
   char attributes_path[MAX_MAP_PATH_LENGTH];
   sprintf(attributes_path, "./res/World%zu/EncTerrain%zu.att", id, id);
@@ -153,6 +193,9 @@ bool map_client_load(struct map_client *map, size_t id) {
 
   char objects_path[MAX_MAP_PATH_LENGTH];
   sprintf(objects_path, "./res/World%zu/EncTerrain%zu.obj", id, id);
+
+  char object_entities_path[MAX_MAP_PATH_LENGTH];
+  sprintf(object_entities_path, "./res/Object%zu", id);
 
   if (!map_height_load(&map->heights, heights_path)) {
     log_error("Unable to load height map %zu from %s", id, heights_path);
@@ -173,9 +216,28 @@ bool map_client_load(struct map_client *map, size_t id) {
   }
   log_info("Loaded attributes map %zu from %s", id, attributes_path);
 
+  if (!map_object_entities_load(map, object_entities_path)) {
+    map_objects_delete(&map->objects);
+    return false;
+  }
+  log_info("Loaded %zu object entities for map %zu", map->num_object_entities, id);
+
   return true;
 }
 
 void map_client_delete(struct map_client *map) {
+  for (size_t i = 0; i < map->num_object_entities; i++) {
+    bmd_delete(&map->object_entities[i]);
+  }
+  free(map->object_entities);
   map_objects_delete(&map->objects);
+}
+
+bool map_client_render(struct map_client *map, struct shader *shader, struct camera *camera) {
+  for (size_t i = 0; i < map->objects.num_objects; i++) {
+    size_t bmd_id = map->objects.objects[i].id;
+    if (!bmd_render(&map->object_entities[bmd_id], shader, camera, &map->objects.objects[i].transformation, NULL))
+      return false;
+  }
+  return true;
 }
