@@ -30,9 +30,10 @@ int main(int argc, char **argv) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  window = SDL_CreateWindow("MU", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 512, 512, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+  window = SDL_CreateWindow("MU", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1200, 675, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
+  glEnable(GL_CULL_FACE);
 
   state.uv_loop = uv_default_loop();
   client_connect(SERVER_ADDRESS, SERVER_PORT);
@@ -40,13 +41,10 @@ int main(int argc, char **argv) {
   struct shader shader;
   shader_load(&shader, "./res/shader.vert", "./res/shader.frag");
 
-  struct camera camera = camera_new(deg(70.0), 0.1, 1000.0, 0.0, 200.0, 0.0, -0.3, 0.0, 0.0);
-
-  struct buffer lights = buffer_new(1, sizeof(struct light));
-  *(struct light *)buffer_get(&lights, 0) = light_new(0, 0, 0, 1.0, 1.0, 1.0);
+  struct camera camera = camera_new(rad(70.0), 0.1, 1000.0, 0, 0.0, 0, 0, 0.0, 0.0);
 
   struct map_client m;
-  if (!map_client_load(&m, 2)) {
+  if (!map_client_load(&m, 3)) {
     return 0;
   }
 
@@ -61,6 +59,40 @@ int main(int argc, char **argv) {
           break;
       }
     }
+    
+
+    const uint8_t *keyboard_state = SDL_GetKeyboardState(NULL);
+    if (keyboard_state[SDL_SCANCODE_W]) {
+      camera_move(&camera, 0, 0.0, 1);
+    }
+    if (keyboard_state[SDL_SCANCODE_S]) {
+      camera_move(&camera, 0, 0.0, -1);
+    }
+    if (keyboard_state[SDL_SCANCODE_A]) {
+      camera_move(&camera, -1, 0.0, 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_D]) {
+      camera_move(&camera, 1, 0.0, 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_Q]) { 
+      camera_move(&camera, 0, -1, 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_E]) {
+      camera_move(&camera, 0, 1, 0.0);
+    }
+
+    if (keyboard_state[SDL_SCANCODE_UP]) {
+      camera_rotate(&camera, rad(5.0), 0.0, 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_DOWN]) {
+      camera_rotate(&camera, -rad(5.0), 0.0, 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_LEFT]) {
+      camera_rotate(&camera, 0, rad(-5.0), 0.0);
+    }
+    if (keyboard_state[SDL_SCANCODE_RIGHT]) {
+      camera_rotate(&camera, 0, rad(5.0), 0.0);
+    }
 
     uv_run(state.uv_loop, UV_RUN_NOWAIT);
 
@@ -74,6 +106,7 @@ int main(int argc, char **argv) {
   }
 
   shader_delete(&shader);
+  map_client_delete(&m);
 
   uv_loop_close(state.uv_loop);
 

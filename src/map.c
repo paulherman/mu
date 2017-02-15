@@ -100,49 +100,68 @@ bool map_object_load(struct map_objects *map_objects, const char *path) {
   xor_decrypt(&file, 0);
 
   uint16_t map_id; 
-  if (!file_buffer_read_uint16(&file, &map_id))
-    goto error;
+  if (!file_buffer_read_uint16(&file, &map_id)) {
+    file_buffer_delete(&file);
+    return false;
+  }
 
-  if (!file_buffer_read_uint16(&file, &map_objects->num_objects))
-    goto error;
+  if (!file_buffer_read_uint16(&file, &map_objects->num_objects)) {
+    file_buffer_delete(&file);
+    return false;
+  }
 
-  if (map_objects->num_objects < 0)
-    goto error;
+  if (map_objects->num_objects < 0) {
+    file_buffer_delete(&file);
+    return false;
+  }
 
-  if (file.length < 4 + 30 * map_objects->num_objects)
-    goto error;
+  if (file.length < 4 + 30 * map_objects->num_objects) {
+    file_buffer_delete(&file);
+    return false;
+  }
 
   map_objects->objects = calloc(map_objects->num_objects, sizeof(struct map_object_def));
   for (size_t i = 0; i < map_objects->num_objects; i++) {
     struct map_object_def *object = &map_objects->objects[i];
     if (!file_buffer_read_int16(&file, &object->id) || object->id < 0) {
       free(map_objects->objects);
-      goto error;
+      file_buffer_delete(&file);
+      return false;
     }
 
-    if (!file_buffer_read_array(&file, &object->transformation.position, sizeof(float), 3)) {
-      object->transformation.position = vec3f_scale(object->transformation.position, 0.01);
+    struct vec3f swapped_position;
+    if (!file_buffer_read_array(&file, &swapped_position, sizeof(float), 3)) {
       free(map_objects->objects);
-      goto error;
+      file_buffer_delete(&file);
+      return false;
     }
 
-    if (!file_buffer_read_array(&file, &object->transformation.rotation, sizeof(float), 3)) {
-      object->transformation.rotation = vec3f_scale(object->transformation.rotation, pi() / 180.0);
+    swapped_position = vec3f_scale(swapped_position, 0.01);
+    object->transformation.position.x = swapped_position.x;
+    object->transformation.position.y = swapped_position.z;
+    object->transformation.position.z = -swapped_position.y;
+
+    struct vec3f swapped_rotation;
+    if (!file_buffer_read_array(&file, &swapped_rotation, sizeof(float), 3)) {
       free(map_objects->objects);
-      goto error;
+      file_buffer_delete(&file);
+      return false;
     }
+    swapped_rotation = vec3f_scale(swapped_rotation, pi() / 180.0);
+    object->transformation.rotation.x = fmod(swapped_rotation.x, pi());
+    object->transformation.rotation.y = fmod(swapped_rotation.z, pi());
+    object->transformation.rotation.z = fmod(-swapped_rotation.y, pi());
 
     if (!file_buffer_read_float(&file, &object->transformation.scale)) {
       free(map_objects->objects);
-      goto error;
+      file_buffer_delete(&file);
+      return false;
     }
+    object->transformation.scale *= 0.01;
   }
 
   file_buffer_delete(&file);
   return true;
-error:
-  file_buffer_delete(&file);
-  return false;
 }
 
 void map_objects_delete(struct map_objects *map_objects) {

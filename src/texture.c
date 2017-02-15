@@ -54,7 +54,7 @@ static int texture_load_skip_bytes(struct texture *texture, const char *path, co
   SDL_RWops *sdl_converted_file = NULL;
 
   if (!file_buffer_read(&file, path))
-    goto err_close;
+    return TEXTURE_LOAD_ERROR;
 
   if (file.length < skip_bytes)
     goto err_close;
