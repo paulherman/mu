@@ -106,7 +106,7 @@ void client_on_tick(uv_timer_t *timer) {
   state.ticks++;
 
   if (state.ticks - state.last_read_tick > CLIENT_MAX_IDLE_TICKS) {
-    client_disconnect();
+    //client_disconnect();
     log_error("Disconnected from server due to idling");
   }
 
