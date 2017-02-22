@@ -5,3 +5,10 @@
 *.png
 *.jpg
 *.tga
+*.pyc
+*.att
+*.map
+*.OZB
+*.ozj
+*.ozt
+*.ozb
