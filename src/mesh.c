@@ -54,6 +54,8 @@ int mesh_load_obj(struct mesh *mesh, const char *file_path) {
   mesh->vertex_positions = calloc(num_vertex_defs, sizeof(struct vec3f));
   mesh->vertex_normals = calloc(num_vertex_defs, sizeof(struct vec3f));
   mesh->texture_coords = calloc(num_vertex_defs, sizeof(struct vec2f));
+  mesh->vertex_position_bones = calloc(num_vertex_defs, sizeof(uint32_t));
+  mesh->vertex_normal_bones = calloc(num_vertex_defs, sizeof(uint32_t));
   
   struct buffer vertex_ids = buffer_new(0, sizeof(uint32_t));
   for (;;) {
@@ -108,7 +110,7 @@ ret:
   return result_code;
 }
 
-void mesh_rectangle(struct mesh *mesh) {
+void mesh_rectangle(struct mesh *mesh, float height_top_left, float height_bottom_left, float height_top_right, float height_bottom_right) {
   mesh->num_vertex_defs = 4;
   mesh->num_vertices = 6;
   mesh->num_triangles = 2;
@@ -118,26 +120,40 @@ void mesh_rectangle(struct mesh *mesh) {
   mesh->texture_coords = calloc(4, sizeof(struct vec2f));
   mesh->vertex_ids = calloc(6, sizeof(uint32_t));
 
-  mesh->vertex_positions[0].x = -0.5;
-  mesh->vertex_positions[0].y = 0.5;
-  mesh->vertex_positions[0].z = 0.0;
-  mesh->vertex_positions[1].x = -0.5;
-  mesh->vertex_positions[1].y = -0.5;
-  mesh->vertex_positions[1].z = 0.0;
-  mesh->vertex_positions[2].x = 0.5;
-  mesh->vertex_positions[2].y = -0.5;
-  mesh->vertex_positions[2].z = 0.0;
-  mesh->vertex_positions[3].x = 0.5;
-  mesh->vertex_positions[3].y = 0.5;
-  mesh->vertex_positions[3].z = 0.0;
+  // top left
+  mesh->vertex_positions[0].x = -1.0;
+  mesh->vertex_positions[0].y = 1.0;
+  mesh->vertex_positions[0].z = height_top_left;
+
+  // bottom left
+  mesh->vertex_positions[1].x = -1.0;
+  mesh->vertex_positions[1].y = -1.0;
+  mesh->vertex_positions[1].z = height_bottom_left;
+
+  // top right
+  mesh->vertex_positions[2].x = 1.0;
+  mesh->vertex_positions[2].y = -1.0;
+  mesh->vertex_positions[2].z = height_top_right;
+
+  // bottom right
+  mesh->vertex_positions[3].x = 1.0;
+  mesh->vertex_positions[3].y = 1.0;
+  mesh->vertex_positions[3].z = height_bottom_right;
+
+  mesh->vertex_normals[0] = vec3f_cross(mesh->vertex_positions[2], mesh->vertex_positions[1]);
+  mesh->vertex_normals[1] = vec3f_cross(mesh->vertex_positions[0], mesh->vertex_positions[3]);
+  mesh->vertex_normals[2] = vec3f_cross(mesh->vertex_positions[0], mesh->vertex_positions[3]);
+  mesh->vertex_normals[3] = vec3f_cross(mesh->vertex_positions[1], mesh->vertex_positions[2]);
+
+  mesh->texture_coords[3].x = 1.0;
+  mesh->texture_coords[3].y = 0.0;
+  mesh->texture_coords[2].x = 1.0;
+  mesh->texture_coords[2].y = 1.0;
   mesh->texture_coords[0].x = 0.0;
   mesh->texture_coords[0].y = 0.0;
   mesh->texture_coords[1].x = 0.0;
   mesh->texture_coords[1].y = 1.0;
-  mesh->texture_coords[2].x = 1.0;
-  mesh->texture_coords[2].y = 1.0;
-  mesh->texture_coords[3].x = 1.0;
-  mesh->texture_coords[3].y = 0.0;
+
   mesh->vertex_ids[0] = 0;
   mesh->vertex_ids[1] = 1;
   mesh->vertex_ids[2] = 3;
@@ -151,4 +167,6 @@ void mesh_delete(struct mesh *mesh) {
   free(mesh->vertex_normals);
   free(mesh->texture_coords);
   free(mesh->vertex_ids);
+  free(mesh->vertex_position_bones);
+  free(mesh->vertex_normal_bones);
 }

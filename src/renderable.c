@@ -1,5 +1,6 @@
 #include "renderable.h"
 #include "vecmath.h"
+#include "log.h"
 #include "error.h"
 
 int renderable_load_mesh(struct renderable *renderable, struct mesh *mesh) {
@@ -44,6 +45,20 @@ int renderable_load_mesh(struct renderable *renderable, struct mesh *mesh) {
   if (glGetError() != GL_NO_ERROR)
     goto create_error;
 
+  glBindBuffer(GL_ARRAY_BUFFER, renderable->vertex_buffers[VERTEX_BUFFER_POSITION_BONE]);
+  glBufferData(GL_ARRAY_BUFFER, mesh->num_vertex_defs * sizeof(uint32_t), mesh->vertex_position_bones, GL_STATIC_DRAW);
+  glVertexAttribIPointer(VERTEX_BUFFER_POSITION_BONE, 1, GL_INT, 0, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  if (glGetError() != GL_NO_ERROR)
+    goto create_error;
+
+  glBindBuffer(GL_ARRAY_BUFFER, renderable->vertex_buffers[VERTEX_BUFFER_NORMAL_BONE]);
+  glBufferData(GL_ARRAY_BUFFER, mesh->num_vertex_defs * sizeof(uint32_t), mesh->vertex_normal_bones, GL_STATIC_DRAW);
+  glVertexAttribIPointer(VERTEX_BUFFER_NORMAL_BONE, 1, GL_INT, 0, 0);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  if (glGetError() != GL_NO_ERROR)
+    goto create_error;
+
   glBindVertexArray(0);
   renderable->num_vertices = mesh->num_vertices;
 
@@ -70,7 +85,7 @@ static float aspect_ratio() {
   return width / height;
 }
 
-int renderable_render(struct renderable *renderable, struct shader *shader, struct texture *texture, struct camera *camera, struct transformation *transformation, struct buffer *lights) {
+int renderable_render(struct renderable *renderable, struct shader *shader, struct texture *texture, struct camera *camera, struct transformation *transformation, struct buffer *lights, struct buffer *bones) {
   int error_code = SUCCESS;
 
   const struct mat4f transformation_matrix = mat4f_transformation(transformation->position, transformation->rotation, transformation->scale);
@@ -93,11 +108,18 @@ int renderable_render(struct renderable *renderable, struct shader *shader, stru
     .mat4f = view_matrix,
     .name = "view"
   };
-  
-  struct buffer uniforms = buffer_new(3, sizeof(struct shader_uniform));
+
+  const struct shader_uniform bones_uniform = {
+    .type = SHADER_UNIFORM_TRANSPOSE_MAT4F_ARRAY,
+    .mat4f_array = bones,
+    .name = "bone_transformations"
+  };
+
+  struct buffer uniforms = buffer_new(4, sizeof(struct shader_uniform));
   *(struct shader_uniform *)buffer_get(&uniforms, 0) = transformation_uniform;
   *(struct shader_uniform *)buffer_get(&uniforms, 1) = projection_uniform;
   *(struct shader_uniform *)buffer_get(&uniforms, 2) = view_uniform;
+  *(struct shader_uniform *)buffer_get(&uniforms, 3) = bones_uniform;
 
   error_code = shader_use(shader, &uniforms);
   if (error_code != SUCCESS)

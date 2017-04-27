@@ -150,6 +150,12 @@ int shader_set_uniform(struct shader *shader, struct shader_uniform *uniform) {
     case SHADER_UNIFORM_TRANSPOSE_MAT4F:
       glUniformMatrix4fv(location, 1, GL_TRUE, (float *)&uniform->mat4f);
       break;
+    case SHADER_UNIFORM_TRANSPOSE_MAT4F_ARRAY:
+      glUniformMatrix4fv(location, uniform->mat4f_array->size, GL_TRUE, (float *)uniform->mat4f_array->data);
+      break;
+    case SHADER_UNIFORM_MAT4F_ARRAY:
+      glUniformMatrix4fv(location, uniform->mat4f_array->size, GL_TRUE, (float *)uniform->mat4f_array->data);
+      break;
     default:
       result_code = SHADER_UNIFORM_UNKOWN_ERROR;
       break;

@@ -16,30 +16,33 @@ static inline bool bmd_read_bone(struct file_buffer *file, struct bmd_animation 
       return false;
 
     size_t total_num_frames = 0;
-    for (size_t i = 0; i > num_animations; i++) 
+    for (size_t i = 0; i < num_animations; i++) 
       total_num_frames += animations[i].num_frames;
 
-    bone->translations = calloc(total_num_frames, sizeof(struct vec3f));
-    bone->rotations = calloc(total_num_frames, sizeof(struct vec3f));
+    bone->transformations = calloc(total_num_frames, sizeof(struct mat4f));
 
     size_t num_read_frames = 0;
-    for (size_t i = 0; i > num_animations; i++) {
-      size_t num_frames = animations[i].num_frames;
-      if (!file_buffer_read_array(file, bone->translations + num_read_frames, num_frames, sizeof(struct vec3f)))
-        goto err_clean;
+    for (size_t i = 0; i < num_animations; i++) {
+      for (size_t t = 0; t < animations[i].num_frames; t++) {
+        struct vec3f translation, rotation;
+        if (!file_buffer_read_array(file, &translation, 1, sizeof(struct vec3f)))
+          goto err_clean;
+        translation.z *= -1.0;
 
-      if (!file_buffer_read_array(file, bone->rotations + num_read_frames, num_frames, sizeof(struct vec3f)))
-        goto err_clean;
+        if (!file_buffer_read_array(file, &rotation, 1, sizeof(struct vec3f)))
+          goto err_clean;
+        rotation.z *= -1.0;
 
-      num_read_frames += num_frames;
+        bone->transformations[num_read_frames] = mat4f_transformation(translation, rotation, 1.0);
+        num_read_frames++;
+      }
     }
   }
 
   return true;
 
 err_clean:
-  free(bone->translations);
-  free(bone->rotations);
+  free(bone->transformations);
   return false;
 }
 
@@ -135,7 +138,7 @@ bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
   mesh->objects = calloc(mesh->num_objects, sizeof(struct bmd_object));
   mesh->animations = calloc(mesh->num_animations, sizeof(struct bmd_animation));
   mesh->bones = calloc(mesh->num_bones, sizeof(struct bmd_bone));
-
+  
   for (size_t i = 0; i < mesh->num_objects; i++)
     if (!bmd_read_object(&file, &mesh->objects[i]))
       goto err_clean;
@@ -176,8 +179,7 @@ void bmd_mesh_delete(struct bmd_mesh *mesh) {
 
   for (size_t i = 0; i < mesh->num_bones; i++) {
     if (!mesh->bones[i].empty) {
-      free(mesh->bones[i].translations);
-      free(mesh->bones[i].rotations);
+      free(mesh->bones[i].transformations);
     }
   }
 
@@ -239,6 +241,8 @@ static inline bool bmd_renderable_load(struct bmd_entity *entity) {
     struct vec3f *positions = calloc(num_defs, sizeof(struct vec3f));
     struct vec3f *normals = calloc(num_defs, sizeof(struct vec3f));
     struct vec2f *texture_coords = calloc(num_defs, sizeof(struct vec2f));
+    uint32_t *vertex_position_bones = calloc(num_defs, sizeof(uint32_t));
+    uint32_t *vertex_normal_bones = calloc(num_defs, sizeof(uint32_t));
     uint32_t *vertex_ids = calloc(num_defs, sizeof(uint32_t));
 
     for (size_t j = 0; j < object->num_triangles; j++) {
@@ -250,6 +254,8 @@ static inline bool bmd_renderable_load(struct bmd_entity *entity) {
         normals[3 * j + k].z *= -1.0;
         texture_coords[3 * j + k] = object->texture_coords[triangle->texture_coords[k]];
         texture_coords[3 * j + k].y = 1.0 - texture_coords[3 * j + k].y;
+        vertex_position_bones[3 * j + k] = object->positions[triangle->positions[k]].bone;
+        vertex_normal_bones[3 * j + k] = object->positions[triangle->normals[k]].bone;
         vertex_ids[3 * j + k] = 3 * j + k;
       }
     }
@@ -258,6 +264,8 @@ static inline bool bmd_renderable_load(struct bmd_entity *entity) {
       .vertex_positions = positions,
       .vertex_normals = normals,
       .texture_coords = texture_coords,
+      .vertex_position_bones = vertex_position_bones,
+      .vertex_normal_bones = vertex_normal_bones,
       .vertex_ids = vertex_ids,
       .num_vertex_defs = num_defs,
       .num_vertices = num_defs,
@@ -266,6 +274,7 @@ static inline bool bmd_renderable_load(struct bmd_entity *entity) {
 
     bool error = renderable_load_mesh(&entity->renderables[i], &mesh) != SUCCESS;
     mesh_delete(&mesh);
+
     if (error) {
       for (size_t j = 0; j < i; j++)
         renderable_delete(&entity->renderables[j]);
@@ -305,9 +314,21 @@ void bmd_delete(struct bmd_entity *entity) {
 }
 
 bool bmd_render(struct bmd_entity *entity, struct shader *shader, struct camera *camera, struct transformation *transformation, struct buffer *lights) {
+  struct buffer bone_transformations = buffer_new(entity->mesh.num_bones, sizeof(struct mat4f));
+  for (size_t i = 0; i < entity->mesh.num_bones; i++) {
+    struct bmd_bone *bone = &entity->mesh.bones[i];
+    if (bone->empty) {
+      *(struct mat4f *)buffer_get(&bone_transformations, i) = mat4f_identity;
+    } else {
+      *(struct mat4f *)buffer_get(&bone_transformations, i) = bone->transformations[0];
+    }
+  }
+
   for (size_t i = 0; i < entity->mesh.num_objects; i++) {
-    if (renderable_render(&entity->renderables[i], shader, &entity->textures[i], camera, transformation, lights) != SUCCESS)
+    for (int err = renderable_render(&entity->renderables[i], shader, &entity->textures[i], camera, transformation, lights, &bone_transformations); err != SUCCESS; err = SUCCESS) {
+      log_debug("Error rendering BMD model - %d", err - INT_MIN);
       return false;
+    }
   }
   return true;
 }

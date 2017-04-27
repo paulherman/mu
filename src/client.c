@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
   SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
-  window = SDL_CreateWindow("MU", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1200, 675, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
+  window = SDL_CreateWindow("MU", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1600, 900, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
   gl_context = SDL_GL_CreateContext(window);
   glewInit();
   glEnable(GL_CULL_FACE);
@@ -39,9 +39,10 @@ int main(int argc, char **argv) {
   client_connect(SERVER_ADDRESS, SERVER_PORT);
 
   struct shader shader;
-  shader_load(&shader, "./res/shader.vert", "./res/shader.frag");
+  for (int err = shader_load(&shader, "./res/shader.vert", "./res/shader.frag"); err != SUCCESS; err = SUCCESS)
+    log_error("Error loading static shader - %d", err - INT_MIN);
 
-  struct camera camera = camera_new(rad(70.0), 0.1, 1000.0, 0, 0.0, 0, 0, 0.0, 0.0);
+  struct camera camera = camera_new(rad(70.0), 0.1, 100.0, 0, 0.0, 0, 0, 0.0, 0.0);
 
   struct map_client m;
   if (!map_client_load(&m, 3)) {

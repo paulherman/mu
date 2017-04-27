@@ -19,8 +19,7 @@ struct bmd_bone {
   bool empty;
   char name[32];
   int16_t parent;
-  struct vec3f *translations;
-  struct vec3f *rotations;
+  struct mat4f *transformations;
 };
 
 struct bmd_position {

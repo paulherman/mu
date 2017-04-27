@@ -23,6 +23,8 @@ enum shader_uniform_type {
   SHADER_UNIFORM_VEC4F,
   SHADER_UNIFORM_MAT4F,
   SHADER_UNIFORM_TRANSPOSE_MAT4F,
+  SHADER_UNIFORM_MAT4F_ARRAY,
+  SHADER_UNIFORM_TRANSPOSE_MAT4F_ARRAY,
 };
 
 struct shader_uniform {
@@ -32,6 +34,7 @@ struct shader_uniform {
     struct vec3f vec3f;
     struct vec4f vec4f;
     struct mat4f mat4f;
+    struct buffer *mat4f_array;
     float f;
     int32_t i;
   };
