@@ -44,8 +44,13 @@ int main(int argc, char **argv) {
 
   struct camera camera = camera_new(rad(70.0), 0.1, 100.0, 0, 0.0, 0, 0, 0.0, 0.0);
 
+  size_t map_id = 25;
+  if (argc == 2) {
+    map_id = atoi(argv[1]);
+  }
+
   struct map_client m;
-  if (!map_client_load(&m, 3)) {
+  if (!map_client_load(&m, map_id)) {
     return 0;
   }
 

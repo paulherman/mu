@@ -15,25 +15,28 @@ static inline bool bmd_read_bone(struct file_buffer *file, struct bmd_animation 
     if (!file_buffer_read_int16(file, &bone->parent))
       return false;
 
+    bone->transformations = NULL;
+
     size_t total_num_frames = 0;
-    for (size_t i = 0; i < num_animations; i++) 
+    for (size_t i = 0; i < num_animations; i++)
       total_num_frames += animations[i].num_frames;
 
-    bone->transformations = calloc(total_num_frames, sizeof(struct mat4f));
+    bone->translations = calloc(total_num_frames, sizeof(struct vec3f));
+    bone->rotations = calloc(total_num_frames, sizeof(struct vec3f));
 
     size_t num_read_frames = 0;
     for (size_t i = 0; i < num_animations; i++) {
       for (size_t t = 0; t < animations[i].num_frames; t++) {
-        struct vec3f translation, rotation;
-        if (!file_buffer_read_array(file, &translation, 1, sizeof(struct vec3f)))
+        struct vec3f *translation = &bone->translations[num_read_frames];
+        if (!file_buffer_read_array(file, translation, 1, sizeof(struct vec3f)))
           goto err_clean;
-        translation.z *= -1.0;
+        translation->z *= -1.0;
 
-        if (!file_buffer_read_array(file, &rotation, 1, sizeof(struct vec3f)))
+        struct vec3f *rotation = &bone->rotations[num_read_frames];
+        if (!file_buffer_read_array(file, rotation, 1, sizeof(struct vec3f)))
           goto err_clean;
-        rotation.z *= -1.0;
+        rotation->z *= -1.0;
 
-        bone->transformations[num_read_frames] = mat4f_transformation(translation, rotation, 1.0);
         num_read_frames++;
       }
     }
@@ -42,7 +45,8 @@ static inline bool bmd_read_bone(struct file_buffer *file, struct bmd_animation 
   return true;
 
 err_clean:
-  free(bone->transformations);
+  free(bone->rotations);
+  free(bone->translations);
   return false;
 }
 
@@ -104,6 +108,39 @@ err_clean:
   return false;
 }
 
+static inline void bmd_compute_bone_transformation(struct bmd_bone *bones, size_t boneId, struct bmd_animation *animations, size_t num_animations) {
+  struct bmd_bone *bone = &bones[boneId];
+  if (bone->transformations != NULL) {
+    return;
+  }
+
+  if (bone->parent >= 0) {
+    bmd_compute_bone_transformation(bones, bone->parent, animations, num_animations);
+  }
+
+  size_t total_num_frames = 0;
+  for (size_t i = 0; i < num_animations; i++)
+    total_num_frames += animations[i].num_frames;
+
+  bone->transformations = calloc(total_num_frames, sizeof(struct mat4f));
+
+  size_t frame_id = 0;
+  for (size_t i = 0; i < num_animations; i++) {
+    for (size_t t = 0; t < animations[i].num_frames; t++) {
+      struct mat4f parent_transformation = mat4f_identity;
+      if (bone->parent >= 0) {
+        parent_transformation = bones[bone->parent].transformations[frame_id];
+      }
+
+      struct mat4f local_transformation = mat4f_identity;
+      if (!bone->empty)
+        local_transformation = mat4f_transformation(bone->translations[frame_id], bone->rotations[frame_id], 1.0);
+
+      bone->transformations[frame_id] = mat4f_multiply(parent_transformation, local_transformation);
+    }
+  }
+}
+
 bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
   struct file_buffer file;
   if (!file_buffer_read(&file, path))
@@ -119,7 +156,7 @@ bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
       uint32_t encode_size;
       if (!file_buffer_read_uint32(&file, &encode_size) || file.length != encode_size + 8)
         return false;
-      xor_decrypt(&file, encode_size);
+      xor_decrypt(&file, 8);
       break;
     }
     default:
@@ -151,6 +188,9 @@ bool bmd_mesh_load(struct bmd_mesh *mesh, const char *path) {
     if (!bmd_read_bone(&file, mesh->animations, mesh->num_animations, &mesh->bones[i]))
       goto err_clean;
 
+  for (size_t i = 0; i < mesh->num_bones; i++)
+    bmd_compute_bone_transformation(mesh->bones, i, mesh->animations, mesh->num_animations);
+
   file_buffer_delete(&file);
   return true;
 
@@ -180,6 +220,8 @@ void bmd_mesh_delete(struct bmd_mesh *mesh) {
   for (size_t i = 0; i < mesh->num_bones; i++) {
     if (!mesh->bones[i].empty) {
       free(mesh->bones[i].transformations);
+      free(mesh->bones[i].rotations);
+      free(mesh->bones[i].translations);
     }
   }
 
@@ -215,7 +257,7 @@ static inline bool bmd_texture_load(struct bmd_entity *entity, const char *textu
     } else if (texture_name[texture_name_len - 1] == 'J') {
       result_code = texture_load_ozj(&entity->textures[i], texture_path);
     } else {
-     result_code = texture_load(&entity->textures[i], texture_path);
+      result_code = texture_load(&entity->textures[i], texture_path);
     }
 
 
@@ -291,6 +333,7 @@ bool bmd_load(struct bmd_entity *entity, const char *mesh_path, const char *text
   }
 
   if (!bmd_texture_load(entity, texture_folder)) {
+    log_error("Unable to load textures for %s", mesh_path);
     bmd_mesh_delete(&entity->mesh);
     return false;
   }

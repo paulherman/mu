@@ -20,6 +20,8 @@ struct bmd_bone {
   char name[32];
   int16_t parent;
   struct mat4f *transformations;
+  struct vec3f *translations;
+  struct vec3f *rotations;
 };
 
 struct bmd_position {
